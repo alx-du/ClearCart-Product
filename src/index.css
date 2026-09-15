@@ -1,0 +1,13 @@
+@import "tailwindcss";
+
+@layer base {
+  html {
+    /* Bumps the effective base size from 16px to 18px so every
+       rem-based Tailwind utility scales up for readability. */
+    font-size: 112.5%;
+  }
+
+  body {
+    @apply text-gray-800;
+  }
+}
