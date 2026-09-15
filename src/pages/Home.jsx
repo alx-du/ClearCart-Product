@@ -1,7 +1,14 @@
 import { useEffect, useRef, useState } from 'react'
 import { useLocation } from 'react-router-dom'
+import AssessmentCard from '../components/AssessmentCard.jsx'
 import ChatInput from '../components/ChatInput.jsx'
 import { addCart, getCartById, updateCart } from '../lib/carts.js'
+
+const STARTER_PROMPTS = [
+  'Is this product durable and worth the price?',
+  'What should I check before buying this?',
+  'How can I compare two similar products?',
+]
 
 export default function Home() {
   const location = useLocation()
@@ -54,7 +61,12 @@ export default function Home() {
 
       const completedMessages = pendingMessages.map((message) =>
         message.id === pendingMessage.id
-          ? { ...message, text: result.reply, status: 'complete' }
+          ? {
+              ...message,
+              text: result.reply,
+              assessment: result.assessment ?? null,
+              status: 'complete',
+            }
           : message,
       )
       setMessages(completedMessages)
@@ -80,39 +92,72 @@ export default function Home() {
   const hasMessages = messages.length > 0
 
   return (
-    <div className="flex h-full flex-col bg-white">
+    <div className="flex h-screen flex-col bg-slate-50">
+      <header className="border-b border-slate-200 bg-white px-4 py-4 sm:px-6 md:hidden">
+        <div className="mx-auto flex max-w-3xl items-center gap-2 text-xl font-bold text-teal-800">
+          <span aria-hidden="true">🛒</span>
+          ClearCart
+        </div>
+      </header>
       {!hasMessages ? (
-        <div className="flex flex-1 flex-col items-center justify-center gap-4 px-6">
-          <h1 className="flex items-center gap-3 text-4xl font-bold text-gray-900">
-            ClearCart
-            <span aria-hidden="true">🛒</span>
-          </h1>
-          <p className="text-xl text-gray-600">Let's look at a product together.</p>
+        <div className="flex flex-1 flex-col items-center justify-center gap-6 overflow-y-auto px-5 py-10 text-center">
+          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-teal-100 text-3xl" aria-hidden="true">
+            🛒
+          </div>
+          <div className="space-y-3">
+            <h1 className="text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">
+              Shop with more confidence
+            </h1>
+            <p className="mx-auto max-w-xl text-lg leading-8 text-slate-600">
+              Ask ClearCart about a product's quality, value, impact, or transparency.
+            </p>
+          </div>
+          <div className="grid w-full max-w-2xl gap-3 sm:grid-cols-3">
+            {STARTER_PROMPTS.map((prompt) => (
+              <button
+                key={prompt}
+                type="button"
+                onClick={() => handleSend(prompt)}
+                disabled={isSending}
+                className="rounded-2xl border border-slate-200 bg-white px-4 py-4 text-left text-sm font-medium text-slate-700 shadow-sm transition hover:border-teal-400 hover:bg-teal-50 focus-visible:ring-4 focus-visible:ring-teal-100 focus-visible:outline-none disabled:opacity-50"
+              >
+                {prompt}
+              </button>
+            ))}
+          </div>
         </div>
       ) : (
-        <div ref={scrollRef} className="flex-1 space-y-5 overflow-y-auto px-6 py-6">
-          {messages.map((message) =>
-            message.role === 'user' ? (
-              <div key={message.id} className="flex justify-end">
-                <div className="max-w-md rounded-2xl bg-teal-50 px-5 py-3 text-lg font-medium text-gray-900">
-                  {message.text}
+        <div ref={scrollRef} className="flex-1 space-y-5 overflow-y-auto px-4 py-6 sm:px-6">
+          <div className="mx-auto flex max-w-3xl flex-col gap-5">
+            {messages.map((message) =>
+              message.role === 'user' ? (
+                <div key={message.id} className="flex justify-end">
+                  <div className="max-w-xl rounded-2xl rounded-br-md bg-teal-700 px-5 py-3 text-base font-medium text-white sm:text-lg">
+                    {message.text}
+                  </div>
                 </div>
-              </div>
-            ) : (
-              <div key={message.id} className="flex justify-start">
-                <div className="max-w-md rounded-2xl border-2 border-teal-500 bg-white px-5 py-4 text-lg text-gray-900">
-                  <span className="mb-2 inline-block rounded-full bg-teal-600 px-3 py-1 text-sm font-semibold text-white">
-                    {message.status === 'pending'
-                      ? 'Thinking…'
-                      : message.status === 'error'
-                        ? 'Unable to respond'
-                        : 'ClearCart'}
-                  </span>
-                  <p aria-live={message.status === 'pending' ? 'polite' : undefined}>{message.text}</p>
+              ) : (
+                <div key={message.id} className="flex justify-start">
+                  {message.assessment && message.status === 'complete' ? (
+                    <AssessmentCard assessment={message.assessment} />
+                  ) : (
+                    <div className="max-w-2xl rounded-2xl rounded-bl-md border border-slate-200 bg-white px-5 py-4 text-base leading-7 text-slate-900 shadow-sm sm:text-lg">
+                      <span className="mb-2 inline-block rounded-full bg-teal-600 px-3 py-1 text-sm font-semibold text-white">
+                        {message.status === 'pending'
+                          ? 'Thinking…'
+                          : message.status === 'error'
+                            ? 'Unable to respond'
+                            : 'ClearCart'}
+                      </span>
+                      <p aria-live={message.status === 'pending' ? 'polite' : undefined}>
+                        {message.text}
+                      </p>
+                    </div>
+                  )}
                 </div>
-              </div>
-            ),
-          )}
+              ),
+            )}
+          </div>
         </div>
       )}
 

@@ -11,7 +11,7 @@ export default function Sidebar() {
   const carts = useCarts()
 
   return (
-    <aside className="flex h-full w-72 shrink-0 flex-col bg-teal-600 px-6 py-8 text-white">
+    <aside className="hidden h-screen w-72 shrink-0 flex-col bg-teal-700 px-6 py-8 text-white md:flex">
       <NavLink to="/" className="mb-10 flex items-center gap-2 text-2xl font-bold">
         ClearCart
         <span aria-hidden="true">🛒</span>

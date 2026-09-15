@@ -9,12 +9,11 @@
   },
   "scripts": {
     "start": "func start",
-    "check": "node --check src/index.js && node --check src/functions/chat.js && node --check src/functions/health.js && node --check src/functions/productSearch.js"
+    "check": "node --check src/index.js && node --check src/functions/chat.js && node --check src/functions/health.js"
   },
   "dependencies": {
     "@azure/ai-projects": "^2.6.0",
     "@azure/functions": "^4.8.0",
-    "@azure/identity": "^4.13.3",
-    "cheerio": "^1.2.0"
+    "@azure/identity": "^4.13.3"
   }
 }

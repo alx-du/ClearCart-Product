@@ -30,7 +30,6 @@ Configure these production application settings:
 - `AZURE_TENANT_ID`
 - `AZURE_CLIENT_ID`
 - `AZURE_CLIENT_SECRET`
-- `BRAVE_API_KEY`
 
 The existing `FOUNDRY_MODEL_DEPLOYMENT` setting is needed only when running `npm run agent:create`; invoking an existing agent does not require it.
 

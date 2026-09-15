@@ -30,8 +30,8 @@ app.http('chat', {
     }
 
     try {
-      const reply = await invokeFoundryAgent(messages)
-      return { jsonBody: { status: 'ok', reply } }
+      const result = await invokeFoundryAgent(messages)
+      return { jsonBody: { status: 'ok', ...result } }
     } catch (error) {
       context.error('Foundry agent failed:', error)
       return {

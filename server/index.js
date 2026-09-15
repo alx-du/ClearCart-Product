@@ -34,8 +34,8 @@ app.post('/api/chat', async (req, res) => {
   }
 
   try {
-    const reply = await invokeFoundryAgent(messages)
-    res.json({ status: 'ok', reply })
+    const result = await invokeFoundryAgent(messages)
+    res.json({ status: 'ok', ...result })
   } catch (error) {
     console.error('Foundry agent failed:', error)
     res.status(500).json({ status: 'error', message: 'The assistant could not respond' })
