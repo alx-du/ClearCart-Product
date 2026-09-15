@@ -3,13 +3,27 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "engines": {
+    "node": ">=22.12.0 <23"
+  },
   "scripts": {
-    "dev": "vite",
+    "dev": "concurrently -k -n api,web -c cyan,green \"npm:dev:api\" \"npm:dev:web\"",
+    "dev:api": "node --watch server/index.js",
+    "dev:web": "vite",
+    "agent:create": "node scripts/createAgent.js",
+    "start": "node server/index.js",
     "build": "vite build",
+    "build:api": "npm install --prefix api",
+    "check:api": "npm run check --prefix api",
     "lint": "oxlint",
     "preview": "vite preview"
   },
   "dependencies": {
+    "@azure/ai-projects": "^2.6.0",
+    "@azure/identity": "^4.13.3",
+    "cheerio": "^1.2.0",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "react-router-dom": "^7.18.3"
@@ -19,6 +33,7 @@
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.7",
     "@vitejs/plugin-react": "^6.1.1",
+    "concurrently": "^10.0.5",
     "oxlint": "^1.81.0",
     "tailwindcss": "^4.3.3",
     "vite": "^8.3.0"

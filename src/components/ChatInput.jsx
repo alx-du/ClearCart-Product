@@ -1,12 +1,16 @@
 import { useState } from 'react'
 
-export default function ChatInput({ onSend, placeholder = "The product I'd like to look at is..." }) {
+export default function ChatInput({
+  onSend,
+  disabled = false,
+  placeholder = "The product I'd like to look at is...",
+}) {
   const [value, setValue] = useState('')
 
   function handleSubmit(e) {
     e.preventDefault()
     const trimmed = value.trim()
-    if (!trimmed) return
+    if (!trimmed || disabled) return
     onSend(trimmed)
     setValue('')
   }
@@ -19,12 +23,14 @@ export default function ChatInput({ onSend, placeholder = "The product I'd like 
           value={value}
           onChange={(e) => setValue(e.target.value)}
           placeholder={placeholder}
+          disabled={disabled}
           className="min-w-0 flex-1 bg-transparent text-lg text-gray-900 placeholder-gray-500 outline-none"
         />
         <button
           type="submit"
           aria-label="Send"
-          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-teal-600 text-white transition hover:bg-teal-700"
+          disabled={disabled}
+          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-teal-600 text-white transition hover:bg-teal-700 disabled:cursor-not-allowed disabled:bg-gray-400"
         >
           <svg viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5">
             <path d="M4 12L20 4L14 12L20 20L4 12Z" />
