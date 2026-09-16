@@ -37,6 +37,18 @@ The existing `FOUNDRY_MODEL_DEPLOYMENT` setting is needed only when running `npm
 
 Install dependencies with `npm install`, then run `npm run dev`. This starts both the Express API on port 8787 and Vite on its normal development port. To emulate the Static Web Apps Functions API locally, copy `api/local.settings.example.json` to `api/local.settings.json`, install Azure Functions Core Tools, and run the Static Web Apps CLI.
 
+## Run locally without any Azure setup (demo mode)
+
+`/api/chat` checks a small hand-seeded response cache (`server/lib/responseCache.js`) before ever calling Foundry. A cache hit needs no credentials, no `.env`, and never touches the network — so `npm install && npm run dev` works immediately and returns a full assessment for these three products: **iPhone 15 Pro**, **Nike Air Force 1**, **Patagonia Better Sweater Fleece**.
+
+Anything else falls through to the real Foundry call (and errors, if you haven't configured credentials above). To make a cache miss fail gracefully instead — useful for a demo where you only want to show off the seeded products — set `DEMO_MODE=true`:
+
+```
+DEMO_MODE=true npm run dev
+```
+
+Note: the seeded cache entries are placeholder content for exercising the UI, not real researched/cited product data.
+
 ## Other commands
 
 - `npm run lint` — lint the project

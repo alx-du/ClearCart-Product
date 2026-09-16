@@ -1,5 +1,18 @@
 import { app } from '@azure/functions'
 import { invokeFoundryAgent } from '../lib/foundryAgent.js'
+import { getCachedResponse, listCachedProductNames } from '../lib/responseCache.js'
+
+// When true, a cache miss never falls through to Foundry — useful for demos
+// with no Azure credentials available at all. A cache hit skips Foundry
+// either way, regardless of this flag.
+const DEMO_MODE = process.env.DEMO_MODE === 'true'
+
+// A cache hit is near-instant, which reads as obviously fake next to a real
+// Foundry round trip — hold it briefly so demo mode feels consistent.
+function simulateThinkingDelay() {
+  const delayMs = 900 + Math.random() * 1200
+  return new Promise((resolve) => setTimeout(resolve, delayMs))
+}
 
 app.http('chat', {
   methods: ['POST'],
@@ -27,6 +40,24 @@ app.http('chat', {
 
     if (messages.length === 0 || messages.at(-1).role !== 'user') {
       return { status: 400, jsonBody: { status: 'error', message: 'A user message is required' } }
+    }
+
+    const cached = getCachedResponse(messages.at(-1).text)
+    if (cached) {
+      await simulateThinkingDelay()
+      return { jsonBody: { status: 'ok', ...cached } }
+    }
+
+    if (DEMO_MODE) {
+      await simulateThinkingDelay()
+      const available = listCachedProductNames().join(', ')
+      return {
+        jsonBody: {
+          status: 'ok',
+          reply: `Demo mode only has data for a few products: ${available}. Try one of those.`,
+          assessment: null,
+        },
+      }
     }
 
     try {
