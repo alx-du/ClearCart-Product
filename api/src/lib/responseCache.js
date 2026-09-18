@@ -133,6 +133,13 @@ export function listCachedProductNames() {
   return CACHED_ASSESSMENTS.map((entry) => entry.productName)
 }
 
+// A cache hit is near-instant, which reads as obviously fake next to a real
+// round trip — hold it briefly so cached and live responses feel consistent.
+export function simulateThinkingDelay() {
+  const delayMs = 900 + Math.random() * 1200
+  return new Promise((resolve) => setTimeout(resolve, delayMs))
+}
+
 // Same return shape as invokeFoundryAgent: { reply, assessment }.
 // Returns null on a cache miss — callers decide what to do next (fall
 // through to Foundry, or refuse to in a credential-free demo context).

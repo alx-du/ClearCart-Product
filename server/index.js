@@ -2,22 +2,19 @@ import 'dotenv/config'
 import express from 'express'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { searchAmazonProductUrls } from './lib/braveSearch.js'
 import { invokeFoundryAgent } from './lib/foundryAgent.js'
-import { findProduct } from './lib/productLookup.js'
-import { getCachedResponse, listCachedProductNames } from './lib/responseCache.js'
+import {
+  findCachedAssessment,
+  getCachedResponse,
+  listCachedProductNames,
+  simulateThinkingDelay,
+} from './lib/responseCache.js'
+import { looksLikeUrl, searchProductCandidates } from './lib/tavilySearch.js'
 
-// When true, a cache miss never falls through to Foundry — useful for demos
-// with no Azure credentials available at all. A cache hit skips Foundry
-// either way, regardless of this flag.
+// When true, a cache miss never falls through to Foundry or Tavily — useful
+// for demos with no external credentials available at all. A cache hit skips
+// them either way, regardless of this flag.
 const DEMO_MODE = process.env.DEMO_MODE === 'true'
-
-// A cache hit is near-instant, which reads as obviously fake next to a real
-// Foundry round trip — hold it briefly so demo mode feels consistent.
-function simulateThinkingDelay() {
-  const delayMs = 900 + Math.random() * 1200
-  return new Promise((resolve) => setTimeout(resolve, delayMs))
-}
 
 const serverDirectory = path.dirname(fileURLToPath(import.meta.url))
 const frontendDirectory = path.resolve(serverDirectory, '../dist')
@@ -28,7 +25,47 @@ app.get('/health', (_req, res) => {
   res.json({ status: 'ok' })
 })
 
+app.post('/api/resolve-product', async (req, res) => {
+  const query = typeof req.body?.query === 'string' ? req.body.query.trim().slice(0, 200) : ''
+  if (!query) {
+    res.status(400).json({ status: 'error', message: 'query is required' })
+    return
+  }
+
+  // Links skip the cache: short aliases like "af1" would otherwise match random
+  // characters inside a product ID in the URL.
+  const cached = looksLikeUrl(query) ? null : findCachedAssessment(query)
+  if (cached) {
+    await simulateThinkingDelay()
+    res.json({
+      status: 'ok',
+      candidates: [{ name: cached.productName, url: null, source: null, image: null }],
+    })
+    return
+  }
+
+  if (DEMO_MODE) {
+    await simulateThinkingDelay()
+    const available = listCachedProductNames().join(', ')
+    res.json({
+      status: 'ok',
+      candidates: [],
+      message: `Demo mode only has data for a few products: ${available}. Try one of those.`,
+    })
+    return
+  }
+
+  try {
+    res.json({ status: 'ok', ...(await searchProductCandidates(query)) })
+  } catch (error) {
+    console.error('Product lookup failed:', error)
+    res.status(500).json({ status: 'error', message: 'The product lookup failed' })
+  }
+})
+
 app.post('/api/chat', async (req, res) => {
+  // "assessment" builds the initial scoring JSON; "chat" answers follow-ups in plain text.
+  const mode = req.body?.mode === 'chat' ? 'chat' : 'assessment'
   const messages = Array.isArray(req.body?.messages)
     ? req.body.messages
         .filter(
@@ -46,7 +83,9 @@ app.post('/api/chat', async (req, res) => {
     return
   }
 
-  const cached = getCachedResponse(messages.at(-1).text)
+  // Follow-up questions must never match the cache: "how does the iPhone 15 Pro
+  // compare?" would otherwise return the canned assessment instead of an answer.
+  const cached = mode === 'assessment' ? getCachedResponse(messages.at(-1).text) : null
   if (cached) {
     await simulateThinkingDelay()
     res.json({ status: 'ok', ...cached })
@@ -58,36 +97,21 @@ app.post('/api/chat', async (req, res) => {
     const available = listCachedProductNames().join(', ')
     res.json({
       status: 'ok',
-      reply: `Demo mode only has data for a few products: ${available}. Try one of those.`,
+      reply:
+        mode === 'chat'
+          ? 'Demo mode only shows the saved assessments. Follow-up questions need the live assistant.'
+          : `Demo mode only has data for a few products: ${available}. Try one of those.`,
       assessment: null,
     })
     return
   }
 
   try {
-    const result = await invokeFoundryAgent(messages)
+    const result = await invokeFoundryAgent(messages, { mode })
     res.json({ status: 'ok', ...result })
   } catch (error) {
     console.error('Foundry agent failed:', error)
     res.status(500).json({ status: 'error', message: 'The assistant could not respond' })
-  }
-})
-
-app.post('/api/products/search', async (req, res) => {
-  const query = typeof req.body?.query === 'string' ? req.body.query.trim() : ''
-  if (!query) {
-    res.status(400).json({ status: 'error', message: 'query is required' })
-    return
-  }
-
-  try {
-    const candidateUrls = await searchAmazonProductUrls(query)
-    const product = candidateUrls.length > 0 ? await findProduct(candidateUrls) : null
-
-    res.json(product ? { status: 'found', product } : { status: 'not_found' })
-  } catch (error) {
-    console.error('Product search failed:', error)
-    res.status(500).json({ status: 'error', message: 'Product search failed' })
   }
 })
 

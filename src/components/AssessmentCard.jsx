@@ -9,7 +9,7 @@ const DIMENSIONS = [
 ]
 
 const COVERAGE_STYLES = {
-  scored: 'bg-teal-100 text-teal-800',
+  scored: 'bg-mist-200 text-accent-900',
   inferred: 'bg-amber-100 text-amber-900',
   claimed: 'bg-blue-100 text-blue-800',
   unknown: 'bg-slate-200 text-slate-700',
@@ -24,7 +24,7 @@ function Score({ value }) {
         {[1, 2, 3, 4, 5].map((step) => (
           <span
             key={step}
-            className={`h-3 w-3 rounded-full ${step <= value ? 'bg-teal-600' : 'bg-slate-200'}`}
+            className={`h-3 w-3 rounded-full ${step <= value ? 'bg-accent-700' : 'bg-mist-200'}`}
           />
         ))}
       </span>
@@ -37,9 +37,9 @@ export default function AssessmentCard({ assessment }) {
   const [expanded, setExpanded] = useState(false)
 
   return (
-    <article className="w-full max-w-2xl overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-      <div className="border-b border-slate-200 bg-gradient-to-r from-teal-50 to-white px-5 py-5 sm:px-6">
-        <span className="mb-2 inline-block rounded-full bg-teal-700 px-3 py-1 text-sm font-semibold text-white">
+    <article className="panel w-full max-w-2xl overflow-hidden">
+      <div className="border-b border-accent-900/10 bg-linear-to-r from-mist-100 to-white px-5 py-5 sm:px-6">
+        <span className="mb-2 inline-block rounded-full bg-accent-800 px-3 py-1 text-sm font-semibold text-white">
           ClearCart assessment
         </span>
         <h2 className="text-xl font-bold text-slate-950 sm:text-2xl">{assessment.productName}</h2>
@@ -68,13 +68,13 @@ export default function AssessmentCard({ assessment }) {
           type="button"
           onClick={() => setExpanded((value) => !value)}
           aria-expanded={expanded}
-          className="mt-5 w-full rounded-xl border-2 border-teal-700 px-4 py-3 text-base font-bold text-teal-800 transition hover:bg-teal-50 focus-visible:ring-4 focus-visible:ring-teal-100 focus-visible:outline-none"
+          className="mt-5 w-full rounded-xl border-2 border-accent-800 px-4 py-3 text-base font-bold text-accent-800 transition hover:bg-mist-300 focus-visible:ring-4 focus-visible:ring-accent-600 focus-visible:outline-none"
         >
           {expanded ? 'Hide sources & explanations' : 'Expand sources & explanations'}
         </button>
 
         {expanded && (
-          <div className="mt-5 space-y-5 rounded-xl bg-slate-50 p-4 sm:p-5">
+          <div className="mt-5 space-y-5 rounded-xl bg-mist-100 p-4 sm:p-5">
             {DIMENSIONS.map(([key, label]) => {
               const dimension = assessment.dimensions[key]
               return (
@@ -85,7 +85,7 @@ export default function AssessmentCard({ assessment }) {
                     <ul className="mt-2 space-y-1">
                       {dimension.sources.map((source) => (
                         <li key={source.url}>
-                          <a className="font-semibold text-teal-800 underline decoration-2 underline-offset-2 hover:text-teal-950" href={source.url} target="_blank" rel="noreferrer">
+                          <a className="font-semibold text-accent-800 underline decoration-2 underline-offset-2 hover:text-accent-900" href={source.url} target="_blank" rel="noreferrer">
                             {source.title}
                           </a>
                         </li>
@@ -103,9 +103,9 @@ export default function AssessmentCard({ assessment }) {
           </div>
         )}
 
-        <div className="mt-5 rounded-xl bg-teal-950 px-4 py-4 text-white sm:px-5">
+        <div className="mt-5 rounded-xl bg-accent-800 px-4 py-4 text-white sm:px-5">
           <h3 className="font-bold">Conclusion</h3>
-          <p className="mt-1 leading-7 text-teal-50">{assessment.conclusion}</p>
+          <p className="mt-1 leading-7 text-white">{assessment.conclusion}</p>
         </div>
       </div>
     </article>

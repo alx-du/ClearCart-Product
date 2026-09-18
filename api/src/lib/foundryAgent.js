@@ -50,6 +50,23 @@ function getClients() {
   return clients
 }
 
+let modelClient
+
+// A plain call to the project's model deployment — no ClearCart agent and none
+// of its stored instructions — for small utility tasks like naming products.
+export async function invokeModel({ instructions, input }) {
+  const model = requireEnvironmentVariable('FOUNDRY_MODEL_DEPLOYMENT')
+  if (!modelClient) {
+    const endpoint = requireEnvironmentVariable('FOUNDRY_PROJECT_ENDPOINT')
+    modelClient = new AIProjectClient(endpoint, createCredential()).getOpenAIClient()
+  }
+  const response = await modelClient.responses.create(
+    { model, instructions, input, reasoning: { effort: 'minimal' } },
+    { timeout: 20000 },
+  )
+  return response.output_text?.trim() ?? ''
+}
+
 function normalizeSources(sources) {
   if (!Array.isArray(sources)) return []
   return sources.flatMap((source) => {
@@ -112,7 +129,24 @@ function parseAssessment(reply, fallbackName) {
   }
 }
 
-export async function invokeFoundryAgent(messages) {
+const CHAT_INSTRUCTIONS = `Answer the user's latest question in plain text: no JSON and no markdown headings. Use the product assessment earlier in this conversation as context. Be concise, balanced, and easy to read. Never invent sources, certifications, prices, or ratings; say what information is missing instead.`
+
+async function invokeChat(messages) {
+  const { openAI } = getClients()
+  const input = messages.map(({ role, text }) => ({ role, content: text }))
+  input[input.length - 1] = {
+    ...input[input.length - 1],
+    content: `${input[input.length - 1].content}\n\n${CHAT_INSTRUCTIONS}`,
+  }
+  const response = await openAI.responses.create({ input })
+  const reply = response.output_text?.trim() ?? ''
+  if (!reply) throw new Error('The Foundry agent returned an empty response')
+  return { reply, assessment: null }
+}
+
+export async function invokeFoundryAgent(messages, { mode = 'assessment' } = {}) {
+  if (mode === 'chat') return invokeChat(messages)
+
   const { openAI } = getClients()
   const input = messages.map(({ role, text }) => ({ role, content: text }))
   input[input.length - 1] = {

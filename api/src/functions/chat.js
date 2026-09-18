@@ -1,18 +1,15 @@
 import { app } from '@azure/functions'
 import { invokeFoundryAgent } from '../lib/foundryAgent.js'
-import { getCachedResponse, listCachedProductNames } from '../lib/responseCache.js'
+import {
+  getCachedResponse,
+  listCachedProductNames,
+  simulateThinkingDelay,
+} from '../lib/responseCache.js'
 
 // When true, a cache miss never falls through to Foundry — useful for demos
 // with no Azure credentials available at all. A cache hit skips Foundry
 // either way, regardless of this flag.
 const DEMO_MODE = process.env.DEMO_MODE === 'true'
-
-// A cache hit is near-instant, which reads as obviously fake next to a real
-// Foundry round trip — hold it briefly so demo mode feels consistent.
-function simulateThinkingDelay() {
-  const delayMs = 900 + Math.random() * 1200
-  return new Promise((resolve) => setTimeout(resolve, delayMs))
-}
 
 app.http('chat', {
   methods: ['POST'],
@@ -26,6 +23,8 @@ app.http('chat', {
       return { status: 400, jsonBody: { status: 'error', message: 'Valid JSON is required' } }
     }
 
+    // "assessment" builds the initial scoring JSON; "chat" answers follow-ups in plain text.
+    const mode = body?.mode === 'chat' ? 'chat' : 'assessment'
     const messages = Array.isArray(body?.messages)
       ? body.messages
           .filter(
@@ -42,7 +41,9 @@ app.http('chat', {
       return { status: 400, jsonBody: { status: 'error', message: 'A user message is required' } }
     }
 
-    const cached = getCachedResponse(messages.at(-1).text)
+    // Follow-up questions must never match the cache: "how does the iPhone 15 Pro
+    // compare?" would otherwise return the canned assessment instead of an answer.
+    const cached = mode === 'assessment' ? getCachedResponse(messages.at(-1).text) : null
     if (cached) {
       await simulateThinkingDelay()
       return { jsonBody: { status: 'ok', ...cached } }
@@ -54,14 +55,17 @@ app.http('chat', {
       return {
         jsonBody: {
           status: 'ok',
-          reply: `Demo mode only has data for a few products: ${available}. Try one of those.`,
+          reply:
+            mode === 'chat'
+              ? 'Demo mode only shows the saved assessments. Follow-up questions need the live assistant.'
+              : `Demo mode only has data for a few products: ${available}. Try one of those.`,
           assessment: null,
         },
       }
     }
 
     try {
-      const result = await invokeFoundryAgent(messages)
+      const result = await invokeFoundryAgent(messages, { mode })
       return { jsonBody: { status: 'ok', ...result } }
     } catch (error) {
       context.error('Foundry agent failed:', error)

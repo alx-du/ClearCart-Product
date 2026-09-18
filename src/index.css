@@ -1,5 +1,26 @@
 @import "tailwindcss";
 
+/* Sidebar tints: Tailwind's teal at the same lightness and hue but about half
+   the saturation (its teal-200/300 read as neon turquoise). To adjust, change
+   the chroma (middle number); lightness is what keeps the text contrast. */
+@theme {
+  --color-mist-100: oklch(95.5% 0.03 186);
+  --color-mist-200: oklch(91.5% 0.055 186);
+  --color-mist-300: oklch(86% 0.08 186);
+
+  /* The solid accent (buttons, badges, chat bubble, active nav pill, headings).
+     These are literally Tailwind's teal-600/700/800/900 (values copied from its
+     theme, not var() references, which would break if teal goes unused). Every
+     accent in the app reads from here, so changing these four lines retunes it
+     all. A muted, lower-saturation variant (800 = oklch(43.7% 0.04 188.2)) was
+     tried and rejected. 800 is the main one (white text 7.5:1); 600 is the input
+     border and focus ring (3.7:1 on white). */
+  --color-accent-600: oklch(60% 0.118 184.704);
+  --color-accent-700: oklch(51.1% 0.096 186.391);
+  --color-accent-800: oklch(43.7% 0.078 188.216);
+  --color-accent-900: oklch(38.6% 0.063 188.416);
+}
+
 @layer base {
   html {
     /* Bumps the effective base size from 16px to 18px so every
@@ -8,6 +29,45 @@
   }
 
   body {
-    @apply text-gray-800;
+    @apply text-slate-800;
+  }
+}
+
+@layer components {
+  /* The white card used across the app (sidebar panels, chat bubbles, cards): a
+     soft shadow and hairline ring lift it off the pale page. Utilities still
+     override it, e.g. `shadow-sm` for the lighter chat bubbles. */
+  .panel {
+    @apply rounded-2xl bg-white shadow-lg ring-1 shadow-accent-900/10 ring-accent-900/10;
+  }
+}
+
+/* Sidebar: faint dot texture over the gradient, and a slim scrollbar for the cart list. */
+.sidebar-dots {
+  background-image: radial-gradient(rgba(50, 100, 95, 0.14) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+.sidebar-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(50, 100, 95, 0.45) transparent;
+}
+
+/* Lets the input glide from the centered hero position to the bottom bar
+   (Home wraps it in .chat-input-shell and uses document.startViewTransition). */
+.chat-input-shell {
+  view-transition-name: chat-input;
+}
+
+::view-transition-group(chat-input) {
+  animation-duration: 450ms;
+  animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
   }
 }
