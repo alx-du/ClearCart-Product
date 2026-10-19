@@ -2,23 +2,47 @@ import 'dotenv/config'
 import express from 'express'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { invokeFoundryAgent } from './lib/foundryAgent.js'
 import {
   findCachedAssessment,
   getCachedResponse,
   listCachedProductNames,
   simulateThinkingDelay,
 } from './lib/responseCache.js'
+import { invokeAssistant } from './lib/modelClient.js'
 import { looksLikeUrl, searchProductCandidates } from './lib/tavilySearch.js'
 
-// When true, a cache miss never falls through to Foundry or Tavily — useful
+// When true, a cache miss never falls through to the model or Tavily — useful
 // for demos with no external credentials available at all. A cache hit skips
 // them either way, regardless of this flag.
 const DEMO_MODE = process.env.DEMO_MODE === 'true'
 
 const serverDirectory = path.dirname(fileURLToPath(import.meta.url))
 const frontendDirectory = path.resolve(serverDirectory, '../dist')
+// Browser origins allowed to call the API cross-origin, e.g. the GitHub Pages
+// site. Not needed when the frontend is served from this server or via Vite.
+const CORS_ORIGINS = (process.env.CORS_ORIGINS ?? '')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean)
+
 const app = express()
+app.use((req, res, next) => {
+  const origin = req.get('origin')
+  if (origin && CORS_ORIGINS.includes(origin)) {
+    res.set({
+      'Access-Control-Allow-Origin': origin,
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type',
+      'Access-Control-Max-Age': '86400',
+      Vary: 'Origin',
+    })
+  }
+  if (req.method === 'OPTIONS') {
+    res.sendStatus(204)
+    return
+  }
+  next()
+})
 app.use(express.json())
 
 app.get('/health', (_req, res) => {
@@ -107,10 +131,10 @@ app.post('/api/chat', async (req, res) => {
   }
 
   try {
-    const result = await invokeFoundryAgent(messages, { mode })
+    const result = await invokeAssistant(messages, { mode })
     res.json({ status: 'ok', ...result })
   } catch (error) {
-    console.error('Foundry agent failed:', error)
+    console.error('Model call failed:', error)
     res.status(500).json({ status: 'error', message: 'The assistant could not respond' })
   }
 })

@@ -1,10 +1,9 @@
-// A cache of pre-computed assessments — the same shape invokeFoundryAgent
-// returns, keyed by product. Checked before ever calling Foundry: a cache
-// hit needs no Azure credentials and costs nothing. Entries are hand-seeded
+// A cache of pre-computed assessments — the same shape invokeAssistant
+// returns, keyed by product. Checked before ever calling the model: a cache
+// hit needs no credentials and costs nothing. Entries are hand-seeded
 // for now; the real version of this (BACKLOG.md A5) would also populate
-// itself from live Foundry responses, but the lookup/consumption shape is
+// itself from live model responses, but the lookup/consumption shape is
 // the same either way.
-// Mirrored at api/src/lib/responseCache.js for the production Functions app.
 
 function dimension(score, coverage, explanation) {
   return { score, coverage, explanation, sources: [] }
@@ -140,9 +139,9 @@ export function simulateThinkingDelay() {
   return new Promise((resolve) => setTimeout(resolve, delayMs))
 }
 
-// Same return shape as invokeFoundryAgent: { reply, assessment }.
+// Same return shape as invokeAssistant: { reply, assessment }.
 // Returns null on a cache miss — callers decide what to do next (fall
-// through to Foundry, or refuse to in a credential-free demo context).
+// through to the model, or refuse to in a credential-free demo context).
 export function getCachedResponse(latestUserText) {
   const match = findCachedAssessment(latestUserText ?? '')
   if (!match) return null

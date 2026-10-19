@@ -22,8 +22,12 @@ function withViewTransition(update) {
   }
 }
 
+// Empty in dev and when served by the Express server; the backend's URL when
+// the frontend is hosted separately (GitHub Pages).
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/$/, '')
+
 async function postJson(url, body) {
-  const response = await fetch(url, {
+  const response = await fetch(`${API_BASE_URL}${url}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),

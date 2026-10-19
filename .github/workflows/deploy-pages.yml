@@ -1,0 +1,48 @@
+name: Deploy frontend to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      # Project pages are served from /<repo>/. The backend URL comes from the
+      # CLEARCART_API_URL repository variable (Settings → Secrets and variables
+      # → Actions → Variables); it is public, so it is a variable, not a secret.
+      - run: npm run build -- --base=/${{ github.event.repository.name }}/
+        env:
+          VITE_API_BASE_URL: ${{ vars.CLEARCART_API_URL }}
+      # Pages has no SPA rewrites: serve the app for deep links like /about too.
+      - run: cp dist/index.html dist/404.html
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

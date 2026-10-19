@@ -28,20 +28,25 @@ implemented in this repo, not the roadmap.
 - Tailwind CSS v4, wired in via `@tailwindcss/vite` (no `tailwind.config.js`
   needed — v4 style)
 - `oxlint` for linting (`npm run lint`)
-- **Backend: two parallel targets, same logic duplicated between them**
-  (see "Product lookup" below):
-  - `server/` — Express, used for local dev (`npm run dev:api`).
-  - `api/` — Azure Functions app, deployed alongside the frontend on Azure
-    Static Web Apps ("managed Functions"). Separate `package.json`/deploy
-    unit from the root project.
-- Model access via **Microsoft Azure AI Foundry** (`@azure/ai-projects`,
-  `@azure/identity`) — a hosted "prompt agent" (system prompt + model
-  deployment, versioned), not a direct OpenAI/Anthropic API call. See below.
+- **Backend: one Express server** (`server/`), for local dev (`npm run
+  dev:api`) and production alike. **No Azure anywhere** — the app previously ran on
+  Azure Static Web Apps + managed Functions (`api/`, a duplicate of `server/`)
+  with a Microsoft Foundry prompt agent; all of that was removed on 2026-09-28.
+- **Hosting:** the frontend is a static build on **GitHub Pages**
+  (`.github/workflows/deploy-pages.yml`); the Express server is self-hosted
+  separately (e.g. on the CoLab's B3IQ machine) and called cross-origin.
+- **Model access:** plain `fetch` to any **OpenAI-compatible
+  `/v1/chat/completions` endpoint** (`server/lib/modelClient.js`), normally the
+  Ethical Tech CoLab **pages-ai-proxy**
+  (github.com/Ethical-Tech-CoLab/pages-ai-proxy, private org repo), which
+  injects the provider token and routes the model id to a cloud API or a local
+  B3IQ GPU model. Which model to use is deliberately undecided — it's just
+  `AI_MODEL`. See below.
 - No test framework set up (`npm test` runs nothing).
 
 Run locally: `npm install && npm run dev` (runs Express on :8787 and Vite on
 :5173 concurrently, via `concurrently`; Vite proxies `/api/*` to Express in
-dev). See "Product lookup" for what does/doesn't need Azure credentials.
+dev). See "Product lookup" for what does/doesn't need credentials.
 
 Node/npm were not preinstalled in the dev sandbox this was built in — if
 that's true in a fresh environment too, install via `apt-get install -y
@@ -65,6 +70,8 @@ src/
                                (hidden if it fails to load), name, source link,
                                Yes / "No, show another" buttons, and "← Back"
                                (from the second result on)
+  main.jsx                 — BrowserRouter with basename = Vite's BASE_URL (the
+                             Pages build uses base /<repo>/)
   hooks/
     useCarts.js               — subscribes a component to the carts localStorage store
   lib/
@@ -73,15 +80,18 @@ src/
     Home.jsx                  — the chat page: opening screen → product lookup &
                                  confirm → assessment → follow-ups (see "Chat /
                                  history behavior"); POSTs to /api/resolve-product
-                                 and /api/chat
+                                 and /api/chat, prefixed with VITE_API_BASE_URL (empty in
+                                 dev; the server's URL in the Pages build)
     About.jsx, CapstonePaper.jsx, TechnicalOverview.jsx — placeholder content pages
 
-server/                    — Express app for local dev (`node server/index.js`)
-  index.js                  — /api/resolve-product, /api/chat
+server/                    — the only backend (`node server/index.js`)
+  index.js                  — /api/resolve-product, /api/chat, CORS for CORS_ORIGINS,
+                               and serves dist/ (so it can host the whole app alone)
   lib/
-    foundryAgent.js          — calls the deployed Foundry agent; also `invokeModel`,
-                               a plain (agent-less) model call for utility tasks
-    responseCache.js         — hand-seeded cache checked before ever calling Foundry
+    modelClient.js           — chat-completions calls: `invokeAssistant` (assessment /
+                               follow-up, with the ClearCart system prompt) and
+                               `invokeModel` (plain call for utility tasks like naming)
+    responseCache.js         — hand-seeded cache checked before ever calling the model
                                or Tavily (also exports simulateThinkingDelay)
     tavilySearch.js          — product-name lookup: Tavily search + model naming
                                (title-cleanup heuristics as the fallback)
@@ -89,17 +99,10 @@ server/                    — Express app for local dev (`node server/index.js`
                                its only caller, a Brave-Search-powered
                                /api/products/search route, was removed; see below)
 
-api/                        — Azure Functions app (separate deploy unit, own
-                               package.json), mirrors server/'s HTTP logic
-  src/
-    functions/chat.js, resolveProduct.js, health.js
-    lib/foundryAgent.js, responseCache.js, tavilySearch.js
-                                           — near-duplicates of server/lib/*
-                                              (slightly different Azure credential
-                                              logic per environment — see below)
-
-scripts/createAgent.js      — provisions/updates the Foundry agent (run manually,
-                               not part of any request path)
+.github/workflows/deploy-pages.yml — builds the frontend with --base=/<repo>/ and
+                               VITE_API_BASE_URL from the CLEARCART_API_URL repo
+                               variable, copies index.html → 404.html (Pages has no
+                               SPA rewrites), deploys to GitHub Pages
 ```
 
 Routes: `/` (Home/chat), `/about`, `/capstone-paper`, `/technical-overview`.
@@ -212,10 +215,9 @@ was an explicit ask, not just a style preference:
   the latter as an anti-pattern — deriving state directly on remount is the
   cleaner fix).
 
-## Product lookup — implemented, via a Foundry prompt agent (no retrieval)
+## Product lookup — implemented, via an OpenAI-compatible model call (no retrieval)
 
-Two backend endpoints (`server/index.js` in dev; `api/src/functions/` in prod —
-same logic, duplicated):
+Two backend endpoints in `server/index.js`:
 
 - `POST /api/resolve-product` `{ query }` → `{ candidates: [{ name, url,
   source, image }], message? }`. Checks the response cache first (a seeded
@@ -226,8 +228,8 @@ same logic, duplicated):
   list drops Wikipedia/Yahoo/Reddit/etc.; `include_images` +
   `include_image_descriptions` return retailer product photos in the same
   request), then **one plain model call** (`invokeModel` →
-  `FOUNDRY_MODEL_DEPLOYMENT`, not the ClearCart agent, so it doesn't depend on
-  the agent's stored instructions) that turns the results into up to 3
+  `AI_NAMING_MODEL`, defaulting to `AI_MODEL`, without the ClearCart system
+  prompt) that turns the results into up to 3
   shopper-style names ("Coca-Cola Soda", not the page title "Shop Coca-Cola
   Products: Find Drinks Near You | Coca-Cola US"), each linked to the result
   that supports it, plus the listed photo (matched by description; each photo
@@ -253,57 +255,46 @@ same logic, duplicated):
 
 See "Response cache & demo mode" below for the layer in front of both.
 
-**How the agent itself works:**
-- `scripts/createAgent.js` (`npm run agent:create`, run manually/occasionally,
-  never per-request) provisions a versioned Azure AI Foundry "prompt agent" —
-  a stored system prompt + model deployment (`FOUNDRY_MODEL_DEPLOYMENT`, e.g.
-  `gpt-5-mini`). That's where the actual instructions live at runtime; the
-  script is just the source text used to push them there.
-- `foundryAgent.js: invokeFoundryAgent(messages, { mode })` calls that agent by
-  name (`FOUNDRY_AGENT_NAME`) via the OpenAI-compatible Responses API
-  (`openAI.responses.create`). In `assessment` mode it re-appends a shorter
-  JSON-shape reinforcement to the last user message each request, retries once
-  with a stricter format correction if the reply doesn't parse as the expected
-  JSON, and defensively drops any source without a valid `http(s)` URL. In
-  `chat` mode it appends a plain-text instruction instead and returns the raw
-  text.
-- **Republishing the agent is required for follow-ups to work well.** The stored
-  instructions used to force a JSON reply on every message; `createAgent.js`
-  now says "JSON only when the request includes assessment-format
-  instructions, otherwise plain text". That edit only takes effect after
-  someone runs `npm run agent:create` (creates a new agent version in Azure) —
-  until then the live agent still answers follow-ups with assessment JSON.
-- **No retrieval, no tools, no database.** The agent is `kind: 'prompt'` —
-  one LLM call against training-data knowledge, not live web search (Tavily is
-  used only to resolve the product *name*, before the agent is ever called). It's
-  instructed to self-report `coverage: unknown`/`claimed` rather than
-  fabricate a `scored` result, but nothing verifies that claim — there's no
-  fetch-and-check step. This matches BACKLOG.md's A3 item ("Evidence
+**How the model is called:**
+- `modelClient.js: chatCompletion` POSTs `{ model, messages }` to `AI_ENDPOINT`
+  and reads `choices[0].message.content`, stripping any inline
+  `<think>…</think>` block (local reasoning models emit one, and its braces
+  would confuse JSON parsing). Headers: `Authorization: Bearer AI_API_KEY` only
+  if set (the proxy supplies its own token, so normally unset), and
+  `Origin: AI_PROXY_ORIGIN` — **the proxy 403s any request with no Origin**
+  unless its `ALLOWED_ORIGINS` is `*`, and a server-side fetch sends none.
+  Timeouts: 120s for assessments/follow-ups (local models cold-start slowly),
+  20s for naming. `AI_NAMING_REASONING_EFFORT`, if set, is passed as
+  `reasoning_effort` on the naming call only (gpt-5-mini wants `minimal` for
+  speed; models that don't know the parameter may reject it, so it's opt-in).
+- `invokeAssistant(messages, { mode })` sends a **system prompt from code**
+  (`SYSTEM_PROMPT`) plus the conversation. This replaced the Foundry agent's
+  stored instructions, so there is no "republish the agent" step any more. In
+  `assessment` mode it appends the JSON-shape instructions to the last user
+  message, retries once with a stricter format correction if the reply doesn't
+  parse, and drops any source without a valid `http(s)` URL. In `chat` mode it
+  appends a plain-text instruction and returns the raw text.
+- **No retrieval, no tools, no database.** One LLM call against the model's
+  training-data knowledge, not live web search (Tavily is used only to resolve
+  the product *name*). The model is instructed to self-report
+  `coverage: unknown`/`claimed` rather than fabricate a `scored` result, but
+  nothing verifies that. This matches BACKLOG.md's A3 item ("Evidence
   orchestration: Tavily search → typed findings → deterministic gating"),
-  which is explicitly *not yet built* — adding real evidence-gathering would
-  mean either a Foundry built-in tool (e.g. Bing grounding) or a custom
-  function-calling tool your own backend executes and feeds results back
-  through, turning `invokeFoundryAgent` from one call into a request/tool-result
-  loop. Neither exists today.
-- Credentials: `DefaultAzureCredential` (dev, needs `az login` + **Foundry
-  User** role) vs. `server/lib/foundryAgent.js`'s `ManagedIdentityCredential`
-  / `api/src/lib/foundryAgent.js`'s `ClientSecretCredential` (prod via
-  `AZURE_TENANT_ID`/`AZURE_CLIENT_ID`/`AZURE_CLIENT_SECRET`) — the two
-  copies differ here, matching each environment's auth model.
-- **No rate limiting, no cost ceiling.** `/api/chat` and `/api/resolve-product`
-  are `authLevel: 'anonymous'`/unauthenticated — anything hitting them (with a
-  cache miss) triggers a real paid Foundry call or Tavily credit, with no
-  per-IP/session quota anywhere in the code.
-- Tavily needs `TAVILY_API_KEY` (in `.env` locally; an application setting on
-  Static Web Apps). Without it a non-cached lookup returns a 500. The naming
-  step also needs `FOUNDRY_PROJECT_ENDPOINT` + `FOUNDRY_MODEL_DEPLOYMENT` and
-  Azure credentials at *runtime* (previously the model deployment name was only
-  needed by `agent:create`); without them it falls back to title cleanup.
-- **Unverified for production:** the Static Web Apps app registration is
-  assigned a role meant for invoking the *agent*. The naming call hits the
-  project's model endpoint directly, so that identity may need an additional
-  role. It works locally with a developer identity; it has not been tried with
-  the production service principal.
+  which is *not yet built*. Adding real evidence-gathering would mean a
+  fetch-and-check step (or function-calling loop) in this server. Small local
+  models behind the proxy will also be weaker at the strict JSON and at
+  product knowledge than a hosted model — the retry helps with the former only.
+- **No rate limiting, no cost ceiling** — not in this server and not in the
+  pages-ai-proxy either (its origin allow-list is a browser-only control; any
+  non-browser client can send a fake Origin). `/api/chat` and
+  `/api/resolve-product` are unauthenticated, so a cache miss triggers a real
+  model call (paid, if the proxy routes to a cloud API) or Tavily credit.
+- Tavily needs `TAVILY_API_KEY` (in `.env`). Without it a non-cached lookup
+  returns a 500. Naming needs `AI_ENDPOINT` + `AI_MODEL`; without them it
+  falls back to title cleanup.
+- **Not yet deployed:** the GitHub Pages workflow, the self-hosted server, and
+  a CoLab-hosted proxy have not been set up. Verified only locally, against the
+  real pages-ai-proxy `local-server.mjs` with a mock upstream.
 
 **Orphaned, unused code from an earlier, reverted approach:** the Brave
 Search side of it (`braveSearch.js`, the `/api/products/search` endpoint,
@@ -312,12 +303,11 @@ scraper that consumed Brave's results) is still present with no caller at all.
 
 ## Response cache & demo mode (implemented)
 
-`responseCache.js` (`server/lib/` and the near-identical `api/src/lib/`
-mirror) holds a small hardcoded array (`CACHED_ASSESSMENTS`) of hand-written
+`responseCache.js` (`server/lib/`) holds a small hardcoded array (`CACHED_ASSESSMENTS`) of hand-written
 product assessments, matched by substring against each entry's `aliases`
 list. **This cache is checked first, unconditionally, before ever
-considering Tavily or Foundry** — both `/api/resolve-product` and
-`/api/chat` (assessment mode) consult it, and a hit needs no Azure or Tavily
+considering Tavily or the model** — both `/api/resolve-product` and
+`/api/chat` (assessment mode) consult it, and a hit needs no model or Tavily
 credentials and never touches the network. `simulateThinkingDelay()`
 (900–2100ms, exported from `responseCache.js`) is awaited before returning a
 cache hit or a demo-mode refusal, so it doesn't read as obviously
@@ -325,9 +315,9 @@ instant/fake next to a real round trip.
 
 - `DEMO_MODE=true` (env var) only changes what happens on a **miss**: refuse
   gracefully ("Demo mode only has data for a few products: ...") instead of
-  falling through to Tavily or `invokeFoundryAgent`; chat-mode follow-ups get
+  falling through to Tavily or `invokeAssistant`; chat-mode follow-ups get
   a "demo mode only shows saved assessments" reply. Without it, a miss
-  behaves as normal — attempts the real Tavily/Foundry call, 500s if
+  behaves as normal — attempts the real Tavily/model call, 500s if
   credentials aren't configured.
 - Currently seeded with 3 products (iPhone 15 Pro, Nike Air Force 1,
   Patagonia Better Sweater Fleece). **The dimension scores/explanations are
@@ -338,13 +328,13 @@ instant/fake next to a real round trip.
   fixtures, not credible research, unless real research is used to replace
   the entries.
 - Distinct from BACKLOG.md's A5 ("Cache + freshness, 7-day TTL"), which
-  describes caching *real* Foundry responses to cut cost on repeat queries —
-  that's still unbuilt. This cache never stores anything Foundry actually
+  describes caching *real* model responses to cut cost on repeat queries —
+  that's still unbuilt. This cache never stores anything a model actually
   said; it's a fixed, hand-authored lookup table.
 - To run locally with **zero external setup**: `npm run dev`, then enter one
   of the 3 seeded products — lookup, confirm and assessment all work with no
-  `.env` at all. Follow-up questions do not (they need the live agent, or get
-  the demo-mode notice). Anything else falls through to the real Tavily/Foundry
+  `.env` at all. Follow-up questions do not (they need a live model, or get
+  the demo-mode notice). Anything else falls through to the real Tavily/model
   path unless `DEMO_MODE=true` is also set.
 
 ## Known gaps / next steps
@@ -352,16 +342,20 @@ instant/fake next to a real round trip.
 - Product lookup has no real evidence/retrieval behind it — see "Product
   lookup" above. This is the single biggest gap relative to what
   `AssessmentCard`'s UI implies (sourced, verified claims).
-- No rate limiting or cost ceiling on `/api/chat` — a real risk once
-  Foundry credentials are live in production (see "Product lookup").
+- No rate limiting or cost ceiling on `/api/chat` — a real risk once a
+  paid upstream is live behind the proxy (see "Product lookup").
 - The response cache's 3 entries are placeholder content, not real research
   (see "Response cache & demo mode" above).
 - `productLookup.js` is orphaned/dead code from a reverted approach — either
   remove it or decide whether to revive it (Brave Search itself has already
   been pruned).
-- Run `npm run agent:create` to publish the new agent instructions, or
-  follow-up answers will keep coming back as assessment JSON (see "Product
-  lookup").
+- Deployment after the Azure removal isn't set up: enable Pages (Source:
+  GitHub Actions), set the `CLEARCART_API_URL` repo variable, host the Express
+  server with `CORS_ORIGINS`, and get a pages-ai-proxy running. The old Azure
+  Static Web App / Foundry resources still exist in Azure until someone
+  deletes them.
+- Model choice is open (`AI_MODEL`); a local B3IQ model hasn't been tried
+  against the assessment prompt.
 - Name resolution depends on the model behaving: it can still propose a
   variant the user didn't mean (that's what "No, show another" is for), and
   it adds roughly 3s to each lookup.

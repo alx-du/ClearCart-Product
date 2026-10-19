@@ -5,9 +5,8 @@
 // call fails, falls back to cleaning page titles heuristically.
 // Pasted links are read by Tavily Extract, so this server never fetches a
 // user-supplied URL itself.
-// Mirrored at api/src/lib/tavilySearch.js for the production Functions app.
 
-import { invokeModel } from './foundryAgent.js'
+import { invokeModel } from './modelClient.js'
 
 const TAVILY_SEARCH_ENDPOINT = 'https://api.tavily.com/search'
 const TAVILY_EXTRACT_ENDPOINT = 'https://api.tavily.com/extract'
