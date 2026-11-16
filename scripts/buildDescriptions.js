@@ -20,7 +20,7 @@ import {
   hashInputs,
   saveDescriptions,
 } from '../server/lib/descriptions.js'
-import { DEFAULT_CLAUDE_MODEL } from '../server/lib/claudeClient.js'
+import { DEFAULT_CLAUDE_MODEL, usageTotals } from '../server/lib/claudeClient.js'
 import { configuredModel } from '../server/lib/modelClient.js'
 
 const dryRun = process.argv.includes('--dry-run')
@@ -46,8 +46,8 @@ if (!dryRun && provider !== 'anthropic' && (!model || !process.env.AI_ENDPOINT?.
 const jobs = listProducts().flatMap(({ id }) => {
   const view = getProductView(id)
   return [
-    ...view.dimensions.map((dimension) => ({ product: id, key: dimension.key, inputs: dimensionInputs(view.name, dimension) })),
-    { product: id, key: 'conclusion', inputs: conclusionInputs(view.name, view.dimensions) },
+    ...view.dimensions.map((dimension) => ({ product: id, key: dimension.key, inputs: dimensionInputs(view.name, dimension, view.brand?.name ?? null) })),
+    { product: id, key: 'conclusion', inputs: conclusionInputs(view.name, view.dimensions, view.brand?.name ?? null) },
   ]
 })
 
@@ -97,4 +97,9 @@ for (const job of stale) {
 
 if (written.length > 0) saveDescriptions(written)
 console.log(`Wrote ${written.length}; ${failed} failed (those pages keep the template text).`)
+if (provider === 'anthropic') {
+  console.log(
+    `Claude usage: ${usageTotals.requests} requests, ${usageTotals.inputTokens} input and ${usageTotals.outputTokens} output tokens (output includes thinking).`,
+  )
+}
 process.exitCode = failed > 0 ? 1 : 0

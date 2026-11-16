@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useLocation, useParams } from 'react-router-dom'
-import { CoverageBadge, CoverageKey, DemoNotice, ScoreDots } from '../components/Badges.jsx'
+import { CoverageBadge, CoverageKey, DemoNotice, DraftNotice, ScoreDots } from '../components/Badges.jsx'
 import { EvidenceList, SourceLine } from '../components/Evidence.jsx'
 import MaterialDonut from '../components/MaterialDonut.jsx'
 import { BackToSearch, LoadError, Loading } from '../components/PageStatus.jsx'
@@ -163,6 +163,7 @@ export default function Product() {
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-4 py-8 sm:px-8">
       <BackToSearch query={location.state?.query} />
       {product.demo && <DemoNotice />}
+      {product.draft && <DraftNotice note={product.draft} />}
 
       <header className="panel overflow-hidden">
         <div className="flex flex-col gap-2 bg-linear-to-r from-mist-100 to-white px-6 py-6">

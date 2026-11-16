@@ -95,6 +95,10 @@ function describeGap(gap, via = null) {
     tier: gap.tier,
     searchedAt: gap.searchedAt,
     whereLooked: gap.whereLooked,
+    // "not_public": we looked where it should be and it isn't there.
+    // "not_researched": we haven't looked properly yet, so we can't say it
+    // isn't public. Missing means "not_public".
+    status: gap.status ?? 'not_public',
     via,
   }
 }
@@ -299,6 +303,7 @@ export function getProductView(productId) {
     brand: chain[0] ? { id: chain[0].id, name: chain[0].name } : null,
     owners: chain.slice(1).map((org) => org.name),
     demo: Boolean(product.demo),
+    draft: product.draft ?? null,
     materials: describeMaterials(productId),
     reviewedAt: assessment?.reviewedAt ?? null,
     dimensions: DIMENSIONS.map((key) => ({

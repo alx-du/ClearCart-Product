@@ -9,6 +9,9 @@ export const DEFAULT_CLAUDE_MODEL = 'claude-opus-5-5'
 
 let client
 
+// Running token totals for this process, so a build can report what it used.
+export const usageTotals = { requests: 0, inputTokens: 0, outputTokens: 0 }
+
 // Structured outputs accept a subset of JSON Schema: every object needs
 // additionalProperties: false, and array size limits aren't supported.
 // checkDescription enforces the counts after the reply instead.
@@ -35,6 +38,10 @@ export async function invokeClaude({ instructions, input, schema, model = DEFAUL
     system: instructions,
     messages: [{ role: 'user', content: input }],
   })
+
+  usageTotals.requests += 1
+  usageTotals.inputTokens += response.usage.input_tokens
+  usageTotals.outputTokens += response.usage.output_tokens
 
   if (response.stop_reason === 'refusal') {
     throw new Error(`Claude declined (${response.stop_details?.category ?? 'no category'})`)

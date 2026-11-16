@@ -105,8 +105,9 @@ server/                    — the only backend (`node server/index.js`)
   data/
     catalogue.json           — the catalogue: products, organizations, sites,
                                supply-chain nodes, materials, facts, gaps,
-                               assessments, sources, contributors. DEMO DATA ONLY
-                               (fictional Hartwell / Corvane Group)
+                               assessments, sources, contributors. Fictional demo
+                               data (Hartwell / Corvane Group) plus 6 real diapers
+                               imported as DRAFT from the team's diaper study
     risk-reference.json      — government risk-list rows (DOL goods list etc.);
                                deliberately EMPTY — see "Lookup ladder"
     descriptions.json        — generated description cache (committed once built;
@@ -262,10 +263,33 @@ was an explicit ask, not just a style preference:
   before the node's validFrom. A fact reached through a node is capped at the
   node's coverage — e.g. the joggers' factory link is only "claimed" (Hartwell
   says so), so the factory's scored SA8000 audit shows as claimed there.
-- **All current content is fictional demo data** (`"demo": true`; the pages
-  show a "Demo data" notice). example.com URLs are placeholders; the UFLPA and
-  UK registry links are real lists, but the facts citing them are demo facts.
-  Real entries need real research, each fact with a real source.
+- **Hartwell / Corvane Group are fictional demo data** (`"demo": true`; the
+  pages show a "Demo data" notice). example.com URLs are placeholders; the UFLPA
+  and UK registry links are real lists, but the facts citing them are demo facts.
+- **Six real diapers are draft data** (`"draft": "<note>"` on the product; the
+  page shows a blue "Draft research" notice): GroVia Hybrid + BioSoaker, Dyper +
+  REDYPER, Eco by Naty Original, Kudos Cotton-Lined, Moltex Pure & Nature, Bambo
+  Nature Dream, imported 2026-11-16 from Alex's Product Integrity Scorer diaper
+  study (alx-du.github.io/product-integrity-scorer/Diapers*.html, a GitHub Pages
+  draft). That study links **no claim to a specific reference**, so every fact
+  cites the study page (source tier `research_draft`, shown as "Draft team
+  research") and the study as contributor; a numbered study reference is added
+  only where its title names the exact claim (Dyper B Corp, REDYPER, Kudos PFAS,
+  the CE Delft / UNEP cloth-diaper LCAs). **None of those references has been
+  read.** Coverage: brand positioning and uncited claims are `claimed`; only
+  those reference-backed facts and two study caveats are `inferred`; nothing is
+  `scored`. All scores are null: the study publishes only weighted totals
+  (80/77/74/74/72/71), no per-dimension scores, and ClearCart doesn't use
+  composites. Its cost page also has arithmetic slips (≈3,796 not 3,793
+  diapers). Missing information is recorded as `not_researched` gaps (below).
+  Next step for these: open the references, attach real sources per claim, and
+  raise or lower coverage accordingly.
+- **Gap status:** `not_public` (default: we looked where it should be and it
+  isn't published) or `not_researched` (we haven't looked properly yet). The page
+  shows "Not public: …" vs "Not yet researched: …", and so do the templates; the
+  description checks forbid "not public / not disclosed" wording unless a cited
+  gap is `not_public`. Never mark a real company's gap `not_public` without
+  having actually checked its own publications.
 
 ## Lookup ladder (implemented)
 
@@ -348,8 +372,16 @@ facts**, never typed in, so they can't drift from the evidence
   scored; any "not public / unknown / no information" wording must cite a gap
   (no invented gaps), and if the input has gaps at least one is cited; at most
   2 sentences (3 for a conclusion) and 60 words (70). `PROMPT_VERSION` is
-  `descriptions-v2`. These catch format and wording problems, not a sentence
-  that quietly stretches a fact. A failed reply is retried
+  `descriptions-v4` (v3 added gap status; v4 added attribution). **Attribution
+  check:** "the brand / the company / <brand name> says, claims, describes…" (or
+  "the brand's own word") is rejected unless a fact the sentence cites has a
+  `self_reported` source; the prompt maps source types to wording
+  (`research_draft` → "a draft study says", never "the brand says"). Added after
+  the first Claude run attributed the diaper study's claims to the brands
+  themselves. These checks catch format, wording and attribution problems, not a
+  sentence that quietly stretches a fact. With `AI_DESCRIPTION_PROVIDER=anthropic`
+  the build prints Claude's token usage (first full run of 48: ~71K input / 19K
+  output tokens, about $0.67 on Opus 5.5). A failed reply is retried
   once with the problems listed; if it fails again, nothing is cached and the
   page keeps the template.
 - The page says summaries are written from each row's evidence; the conclusion

@@ -15,7 +15,7 @@ import { fileURLToPath } from 'node:url'
 
 // Bump when the prompt or the input shape changes: every cached description
 // then counts as stale.
-export const PROMPT_VERSION = 'descriptions-v2'
+export const PROMPT_VERSION = 'descriptions-v4'
 
 const CACHE_FILE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../data/descriptions.json')
 const COVERAGE_RANK = { unknown: 0, claimed: 1, inferred: 2, scored: 3 }
@@ -34,10 +34,11 @@ function byId(a, b) {
 }
 
 // `dimension` is one entry of getProductView().dimensions.
-export function dimensionInputs(productName, dimension) {
+export function dimensionInputs(productName, dimension, brandName = null) {
   return {
     kind: 'dimension',
     productName,
+    brandName,
     dimension: dimension.key,
     score: dimension.score,
     coverage: dimension.coverage,
@@ -50,16 +51,17 @@ export function dimensionInputs(productName, dimension) {
         sourceTypes: [...new Set(fact.sources.map((source) => source.tier))].sort(),
       }))
       .sort(byId),
-    gaps: dimension.gaps.map((gap) => ({ id: gap.id, missing: gap.missing })).sort(byId),
+    gaps: dimension.gaps.map((gap) => ({ id: gap.id, missing: gap.missing, status: gap.status })).sort(byId),
   }
 }
 
-export function conclusionInputs(productName, dimensions) {
+export function conclusionInputs(productName, dimensions, brandName = null) {
   return {
     kind: 'conclusion',
     productName,
+    brandName,
     dimensions: dimensions.map((dimension) => {
-      const { kind: _kind, productName: _name, ...rest } = dimensionInputs(productName, dimension)
+      const { kind: _kind, productName: _name, brandName: _brand, ...rest } = dimensionInputs(productName, dimension)
       return rest
     }),
   }
@@ -87,9 +89,17 @@ export function citableIds(inputs) {
   return new Map(
     dimensions.flatMap((dimension) => [
       ...dimension.facts.map((fact) => [fact.id, fact.coverage]),
-      ...dimension.gaps.map((gap) => [gap.id, 'gap']),
+      // "gap" for something not public, "gap-unresearched" for something we haven't looked into yet.
+      ...dimension.gaps.map((gap) => [gap.id, gap.status === 'not_researched' ? 'gap-unresearched' : 'gap']),
     ]),
   )
+}
+
+// Each fact id's source types (self_reported, research_draft, …), to check
+// who a description says a claim came from.
+export function sourceTypesOf(inputs) {
+  const dimensions = inputs.kind === 'conclusion' ? inputs.dimensions : [inputs]
+  return new Map(dimensions.flatMap((dimension) => dimension.facts.map((fact) => [fact.id, fact.sourceTypes])))
 }
 
 // --- Template text: no model, always available ---------------------------
@@ -99,7 +109,10 @@ function lowerFirst(text) {
 }
 
 function listOf(items) {
-  return items.length <= 1 ? (items[0] ?? '') : `${items.slice(0, -1).join(', ')} and ${items.at(-1)}`
+  if (items.length <= 1) return items[0] ?? ''
+  // Items with their own "and" read better kept apart by semicolons.
+  if (items.some((item) => item.includes(' and '))) return items.join('; ')
+  return `${items.slice(0, -1).join(', ')} and ${items.at(-1)}`
 }
 
 export function templateDimension(inputs) {
@@ -108,8 +121,20 @@ export function templateDimension(inputs) {
     .sort((a, b) => COVERAGE_RANK[b.coverage] - COVERAGE_RANK[a.coverage] || a.id.localeCompare(b.id))
     .slice(0, 2)
     .map((fact) => fact.statement)
-  const missing = inputs.gaps.map((gap) => lowerFirst(gap.missing))
-  return [...strongest, missing.length > 0 ? `Not public: ${listOf(missing)}.` : null].filter(Boolean).join(' ')
+  return [...strongest, ...gapSentences(inputs.gaps)].join(' ')
+}
+
+// "Not public: …" and "Not yet researched: …", never mixing the two.
+function gapSentences(gaps, limit = Infinity) {
+  const named = (status) => [
+    ...new Set(gaps.filter((gap) => (gap.status ?? 'not_public') === status).map((gap) => lowerFirst(gap.missing))),
+  ]
+  const notPublic = named('not_public').slice(0, limit)
+  const notResearched = named('not_researched').slice(0, limit)
+  return [
+    notPublic.length > 0 ? `Not public: ${listOf(notPublic)}.` : null,
+    notResearched.length > 0 ? `Not yet researched: ${listOf(notResearched)}.` : null,
+  ].filter(Boolean)
 }
 
 export function templateConclusion(inputs) {
@@ -117,14 +142,13 @@ export function templateConclusion(inputs) {
     inputs.dimensions.filter((dimension) => coverages.includes(dimension.coverage)).map((d) => DIMENSION_NAMES[d.dimension])
   const strong = named(['scored'])
   const weak = named(['claimed', 'unknown'])
-  const missing = [...new Set(inputs.dimensions.flatMap((dimension) => dimension.gaps.map((gap) => lowerFirst(gap.missing))))]
 
   return [
     strong.length > 0
       ? `Independent evidence covers ${listOf(strong)}.`
       : 'None of the five dimensions has independent evidence yet.',
     weak.length > 0 ? `Little or nothing is confirmed for ${listOf(weak)}.` : null,
-    missing.length > 0 ? `Not public: ${listOf(missing.slice(0, 3))}.` : null,
+    ...gapSentences(inputs.dimensions.flatMap((dimension) => dimension.gaps), 3),
   ]
     .filter(Boolean)
     .join(' ')
@@ -188,12 +212,12 @@ function pick(productId, key, inputs, template) {
 // Adds `summary`/`summaryOrigin` to each dimension and a `conclusion`.
 export function describeProduct(view) {
   const dimensions = view.dimensions.map((dimension) => {
-    const { text, origin } = pick(view.id, dimension.key, dimensionInputs(view.name, dimension), templateDimension)
+    const { text, origin } = pick(view.id, dimension.key, dimensionInputs(view.name, dimension, view.brand?.name ?? null), templateDimension)
     return { ...dimension, summary: text, summaryOrigin: origin }
   })
   return {
     ...view,
     dimensions,
-    conclusion: pick(view.id, 'conclusion', conclusionInputs(view.name, view.dimensions), templateConclusion),
+    conclusion: pick(view.id, 'conclusion', conclusionInputs(view.name, view.dimensions, view.brand?.name ?? null), templateConclusion),
   }
 }

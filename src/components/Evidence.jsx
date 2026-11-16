@@ -6,6 +6,7 @@ const TIER_LABELS = {
   investigative: 'Investigation',
   first_hand_report: 'First-hand report',
   self_reported: 'Self-reported',
+  research_draft: 'Draft team research',
 }
 
 const LINK = 'font-semibold text-accent-800 underline decoration-2 underline-offset-2 hover:text-accent-900'
@@ -54,7 +55,10 @@ export function FactItem({ fact, showCoverage = true }) {
 export function GapItem({ gap }) {
   return (
     <li className="rounded-xl border-2 border-dashed border-slate-400 px-4 py-3">
-      <p className="font-bold text-slate-800">Not public: {gap.missing.charAt(0).toLowerCase() + gap.missing.slice(1)}.</p>
+      <p className="font-bold text-slate-800">
+        {gap.status === 'not_researched' ? 'Not yet researched' : 'Not public'}:{' '}
+        {gap.missing.charAt(0).toLowerCase() + gap.missing.slice(1)}.
+      </p>
       <p className="mt-1 text-[0.9rem] text-slate-600">
         {gap.note ??
           `We checked ${gap.whereLooked}${gap.searchedAt ? ` on ${formatDate(gap.searchedAt)}` : ''}.`}

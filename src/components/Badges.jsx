@@ -60,6 +60,15 @@ export function ScoreDots({ value }) {
   )
 }
 
+// For real products whose evidence hasn't been checked against its sources yet.
+export function DraftNotice({ note }) {
+  return (
+    <p className="rounded-xl bg-blue-100 px-4 py-3 text-base text-blue-900">
+      <strong>Draft research.</strong> {note}
+    </p>
+  )
+}
+
 export function DemoNotice() {
   return (
     <p className="rounded-xl bg-amber-100 px-4 py-3 text-base text-amber-900">
