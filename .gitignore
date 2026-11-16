@@ -25,3 +25,7 @@ api/local.settings.json
 *.njsproj
 *.sln
 *.sw?
+
+# Local scratch work (schema sketches etc.)
+sandbox/
+server/data/runtime/

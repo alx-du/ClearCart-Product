@@ -1,8 +1,18 @@
 import { Link, NavLink } from 'react-router-dom'
-import { useCarts } from '../hooks/useCarts.js'
+import { useHistory } from '../hooks/useHistory.js'
 
 // Icon shapes are SVG path data drawn on a 24x24 grid.
 const NAV_LINKS = [
+  {
+    to: '/',
+    label: 'Search',
+    icon: ['M18 11a7 7 0 1 1-14 0 7 7 0 0 1 14 0Z', 'M20 20l-4-4'],
+  },
+  {
+    to: '/catalogue',
+    label: 'Browse catalogue',
+    icon: ['M4 4h7v7H4Z', 'M13 4h7v7h-7Z', 'M4 13h7v7H4Z', 'M13 13h7v7h-7Z'],
+  },
   {
     to: '/about',
     label: 'About',
@@ -52,7 +62,7 @@ function NavIcon({ paths }) {
 }
 
 export default function Sidebar() {
-  const carts = useCarts()
+  const history = useHistory()
 
   return (
     <aside className="relative hidden h-screen w-72 shrink-0 flex-col overflow-hidden bg-linear-to-b from-mist-100 via-mist-200 to-mist-300 text-slate-800 shadow-[-8px_0_24px_-12px_rgba(30,70,66,0.3)] md:flex">
@@ -81,6 +91,7 @@ export default function Sidebar() {
             <NavLink
               key={link.to}
               to={link.to}
+              end={link.to === '/'}
               className={({ isActive }) =>
                 `flex items-center gap-3 rounded-xl px-3 py-2.5 text-base font-medium transition ${FOCUS} ${
                   isActive ? 'bg-accent-800 text-white shadow-md' : 'text-slate-800 hover:bg-mist-300'
@@ -103,32 +114,31 @@ export default function Sidebar() {
           ))}
         </nav>
 
-        <section aria-labelledby="carts-heading" className={`${PANEL} flex min-h-0 flex-1 flex-col p-3`}>
+        <section aria-labelledby="history-heading" className={`${PANEL} flex min-h-0 flex-1 flex-col p-3`}>
           <h2
-            id="carts-heading"
+            id="history-heading"
             className="mb-3 px-2 pt-1 text-sm font-semibold tracking-wide text-accent-800 uppercase"
           >
             Previous Carts
           </h2>
 
-          {carts.length === 0 ? (
+          {history.length === 0 ? (
             <div className="flex flex-1 flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-mist-300 px-4 py-8 text-center">
               <span className="text-3xl" aria-hidden="true">
                 🛒
               </span>
-              <p className="text-sm text-slate-600">Products you add to your cart will show up here.</p>
+              <p className="text-sm text-slate-600">Products you look at will show up here.</p>
             </div>
           ) : (
             <ul className="sidebar-scroll flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto pr-1">
-              {carts.map((cart) => (
-                <li key={cart.id}>
+              {history.map((entry) => (
+                <li key={entry.to}>
                   <Link
-                    to="/"
-                    state={{ cartId: cart.id }}
-                    title={cart.productName}
+                    to={entry.to}
+                    title={entry.label}
                     className={`block truncate rounded-xl px-3 py-2.5 text-sm font-medium text-slate-800 transition hover:bg-mist-300 ${FOCUS}`}
                   >
-                    {cart.productName}
+                    {entry.label}
                   </Link>
                 </li>
               ))}

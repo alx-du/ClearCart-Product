@@ -5,9 +5,8 @@
 // call fails, falls back to cleaning page titles heuristically.
 // Pasted links are read by Tavily Extract, so this server never fetches a
 // user-supplied URL itself.
-// Mirrored at api/src/lib/tavilySearch.js for the production Functions app.
 
-import { invokeModel } from './foundryAgent.js'
+import { invokeModel } from './modelClient.js'
 
 const TAVILY_SEARCH_ENDPOINT = 'https://api.tavily.com/search'
 const TAVILY_EXTRACT_ENDPOINT = 'https://api.tavily.com/extract'
@@ -196,6 +195,25 @@ async function tavilyPost(endpoint, apiKey, body, timeoutMs) {
     throw new Error(`Tavily request failed with status ${response.status}`)
   }
   return response.json()
+}
+
+// Plain search results ({ title, url, content }) for the catalogue lookup,
+// which reads them with text patterns rather than a model.
+export async function searchListings(query, apiKey) {
+  const data = await tavilyPost(
+    TAVILY_SEARCH_ENDPOINT,
+    apiKey,
+    {
+      query: `buy ${query}`,
+      max_results: 8,
+      search_depth: 'basic',
+      exclude_domains: EXCLUDED_DOMAINS,
+    },
+    10000,
+  )
+  return (data.results ?? []).filter(
+    (result) => typeof result?.title === 'string' && typeof result?.url === 'string',
+  )
 }
 
 // Returns { title, content, images }, or null if Tavily couldn't read the page.

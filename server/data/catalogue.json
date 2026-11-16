@@ -1,0 +1,362 @@
+{
+  "_about": "ClearCart catalogue. Layout follows sandbox/product-entry-example.txt: things (products, organizations, sites, sources, contributors), each product's supply-chain nodes, and facts/gaps attached to whatever they are about. Everything with \"demo\": true is fictional sample data (Hartwell, Corvane Group and their suppliers do not exist); example.com URLs are placeholders. Real government and registry URLs point at the real lists, but the facts citing them here are demo facts.",
+  "organizations": [
+    {"id": "org_hartwell", "name": "Hartwell", "type": "brand", "parent": "org_corvane", "country": "United Kingdom", "aliases": ["hartwell", "hartwell clothing", "hartwell.example.com"], "demo": true},
+    {"id": "org_corvane", "name": "Corvane Group", "type": "parent_company", "parent": null, "country": "United Kingdom", "aliases": ["corvane", "corvane group"], "demo": true},
+    {"id": "org_riverside", "name": "Riverside Garment Co.", "type": "contract_manufacturer", "parent": null, "country": "Vietnam", "aliases": ["riverside garment", "riverside garment co"], "demo": true},
+    {"id": "org_northgate", "name": "Northgate Textiles", "type": "supplier", "parent": null, "country": "Vietnam", "aliases": ["northgate textiles"], "demo": true},
+    {"id": "org_eastbank", "name": "Eastbank Knitting", "type": "supplier", "parent": null, "country": "Vietnam", "aliases": ["eastbank knitting"], "demo": true},
+    {"id": "org_delta", "name": "Delta Spinning", "type": "supplier", "parent": null, "country": "Vietnam", "aliases": ["delta spinning"], "demo": true},
+    {"id": "org_grovia", "name": "GroVia", "type": "brand", "parent": null, "country": null, "aliases": ["grovia"]},
+    {"id": "org_dyper", "name": "Dyper", "type": "brand", "parent": null, "country": null, "aliases": ["dyper"]},
+    {"id": "org_naty", "name": "Eco by Naty", "type": "brand", "parent": null, "country": null, "aliases": ["eco by naty", "naty"]},
+    {"id": "org_kudos", "name": "Kudos", "type": "brand", "parent": null, "country": null, "aliases": ["kudos"]},
+    {"id": "org_moltex", "name": "Moltex", "type": "brand", "parent": null, "country": null, "aliases": ["moltex"]},
+    {"id": "org_bambo", "name": "Bambo Nature", "type": "brand", "parent": null, "country": null, "aliases": ["bambo nature", "bambo"]}
+  ],
+  "sites": [
+    {"id": "site_riverside", "org": "org_riverside", "name": "Riverside Garment Factory", "country": "Vietnam", "aliases": ["riverside garment factory"], "demo": true},
+    {"id": "site_northgate", "org": "org_northgate", "name": "Northgate Fabric Mill", "country": "Vietnam", "aliases": ["northgate fabric mill"], "demo": true},
+    {"id": "site_eastbank", "org": "org_eastbank", "name": "Eastbank Knitting Mill", "country": "Vietnam", "aliases": ["eastbank knitting mill"], "demo": true},
+    {"id": "site_delta", "org": "org_delta", "name": "Delta Spinning Mill", "country": "Vietnam", "aliases": ["delta spinning mill"], "demo": true}
+  ],
+  "products": [
+    {"id": "prd_hartwell_hoodie", "name": "Hartwell Fleece Hoodie", "brand": "org_hartwell", "productLine": "Hartwell Fleece", "category": "apparel", "aliases": ["hartwell fleece hoodie", "hartwell hoodie"], "demo": true},
+    {"id": "prd_hartwell_joggers", "name": "Hartwell Trail Joggers", "brand": "org_hartwell", "productLine": "Hartwell Fleece", "category": "apparel", "aliases": ["hartwell trail joggers", "hartwell joggers"], "demo": true},
+    {"id": "prd_grovia_hybrid", "name": "GroVia Hybrid + BioSoaker", "brand": "org_grovia", "productLine": "GroVia Hybrid", "category": "baby.diapers", "aliases": ["grovia hybrid", "grovia biosoaker", "biosoaker", "grovia hybrid biosoaker", "grovia hybrid diapers"], "draft": "Imported from the team's draft diaper study. The study doesn't link its claims to specific sources, and none have been checked against the sources yet, so treat these as leads."},
+    {"id": "prd_dyper_redyper", "name": "Dyper Diaper + REDYPER", "brand": "org_dyper", "productLine": "Dyper", "category": "baby.diapers", "aliases": ["dyper diapers", "dyper diaper", "redyper", "dyper redyper"], "draft": "Imported from the team's draft diaper study. The study doesn't link its claims to specific sources, and none have been checked against the sources yet, so treat these as leads."},
+    {"id": "prd_naty_original", "name": "Eco by Naty Original Diapers", "brand": "org_naty", "productLine": "Eco by Naty", "category": "baby.diapers", "aliases": ["eco by naty diapers", "naty diapers", "naty original diapers"], "draft": "Imported from the team's draft diaper study. The study doesn't link its claims to specific sources, and none have been checked against the sources yet, so treat these as leads."},
+    {"id": "prd_kudos_cotton", "name": "Kudos Cotton-Lined Diapers", "brand": "org_kudos", "productLine": "Kudos", "category": "baby.diapers", "aliases": ["kudos diapers", "kudos cotton diapers", "kudos cotton-lined diapers"], "draft": "Imported from the team's draft diaper study. The study doesn't link its claims to specific sources, and none have been checked against the sources yet, so treat these as leads."},
+    {"id": "prd_moltex_pure", "name": "Moltex Pure & Nature", "brand": "org_moltex", "productLine": "Moltex Pure & Nature", "category": "baby.diapers", "aliases": ["moltex pure nature", "moltex pure and nature", "moltex diapers"], "draft": "Imported from the team's draft diaper study. The study doesn't link its claims to specific sources, and none have been checked against the sources yet, so treat these as leads."},
+    {"id": "prd_bambo_dream", "name": "Bambo Nature Dream Diapers", "brand": "org_bambo", "productLine": "Bambo Nature Dream", "category": "baby.diapers", "aliases": ["bambo nature dream", "bambo nature diapers", "bambo dream diapers"], "draft": "Imported from the team's draft diaper study. The study doesn't link its claims to specific sources, and none have been checked against the sources yet, so treat these as leads."}
+  ],
+  "materials": [
+    {"id": "mat_hoodie_cotton", "product": "prd_hartwell_hoodie", "component": "body", "material": "cotton", "percent": 80, "recycledPercent": 0, "coverage": "claimed", "sources": ["src_hartwell_hoodie_page"]},
+    {"id": "mat_hoodie_poly", "product": "prd_hartwell_hoodie", "component": "body", "material": "polyester", "percent": 20, "recycledPercent": 50, "coverage": "claimed", "sources": ["src_hartwell_hoodie_page"]},
+    {"id": "mat_joggers_cotton", "product": "prd_hartwell_joggers", "component": "body", "material": "cotton", "percent": 100, "recycledPercent": 0, "coverage": "claimed", "sources": ["src_hartwell_joggers_page"]}
+  ],
+  "nodes": [
+    {"id": "node_hoodie_sew", "product": "prd_hartwell_hoodie", "tier": 1, "role": "Sewing and finishing", "site": "site_riverside", "line": "knitwear", "coverage": "scored", "sources": ["src_hartwell_suppliers", "src_import_research"], "contributor": "ctr_researcher", "validFrom": "2023-01-01", "validTo": null},
+    {"id": "node_hoodie_fabric_a", "product": "prd_hartwell_hoodie", "tier": 2, "role": "Fabric knitting and dyeing", "site": "site_northgate", "coverage": "claimed", "sources": ["src_hartwell_suppliers"], "contributor": null, "validFrom": "2023-01-01", "validTo": null},
+    {"id": "node_hoodie_fabric_b", "product": "prd_hartwell_hoodie", "tier": 2, "role": "Fabric knitting", "site": "site_eastbank", "coverage": "claimed", "sources": ["src_hartwell_suppliers"], "contributor": null, "validFrom": "2023-01-01", "validTo": null},
+    {"id": "node_hoodie_yarn", "product": "prd_hartwell_hoodie", "tier": 3, "role": "Yarn spinning", "site": "site_delta", "coverage": "inferred", "sources": ["src_import_research"], "contributor": "ctr_researcher", "validFrom": "2024-01-01", "validTo": null},
+    {"id": "node_joggers_sew", "product": "prd_hartwell_joggers", "tier": 1, "role": "Sewing and finishing", "site": "site_riverside", "line": "wovens", "coverage": "claimed", "sources": ["src_hartwell_suppliers"], "contributor": null, "validFrom": "2023-01-01", "validTo": null},
+    {"id": "node_joggers_fabric", "product": "prd_hartwell_joggers", "tier": 2, "role": "Fabric knitting and dyeing", "site": "site_northgate", "coverage": "claimed", "sources": ["src_hartwell_suppliers"], "contributor": null, "validFrom": "2023-01-01", "validTo": null}
+  ],
+  "facts": [
+    {"id": "f_riverside_sa8000", "subject": "site_riverside", "attribute": "social_audit", "statement": "Riverside Garment Factory passed an SA8000 labour audit in 2025.", "dimension": "people", "coverage": "scored", "scope": "whole_site", "sources": ["src_sa8000_record"], "contributor": null, "validAsOf": "2025-06-30"},
+    {"id": "f_riverside_grievance", "subject": "site_riverside", "attribute": "grievance_mechanism", "statement": "The factory has a worker complaints line run by an outside group.", "dimension": "people", "coverage": "claimed", "scope": "whole_site", "sources": ["src_hartwell_report"], "contributor": null, "validAsOf": "2025-12-31"},
+    {"id": "f_riverside_gots", "subject": "site_riverside", "attribute": "certification", "statement": "The factory's knitwear line is certified to the Global Organic Textile Standard (GOTS).", "dimension": "planet", "coverage": "scored", "scope": "line:knitwear", "sources": ["src_gots_record"], "contributor": null, "validAsOf": "2025-03-01"},
+    {"id": "f_riverside_uflpa", "subject": "org_riverside", "attribute": "enforcement_listing", "statement": "Riverside Garment Co. is not on the US forced-labour import ban list (UFLPA Entity List).", "dimension": "people", "coverage": "scored", "scope": "whole_org", "sources": ["src_uflpa"], "contributor": null, "validAsOf": "2026-09-01"},
+    {"id": "f_northgate_chemicals", "subject": "site_northgate", "attribute": "chemical_standard", "statement": "Northgate Fabric Mill says it follows the ZDHC chemical-safety guidelines for dyeing.", "dimension": "planet", "coverage": "claimed", "scope": "whole_site", "sources": ["src_hartwell_report"], "contributor": null, "validAsOf": "2025-12-31"},
+    {"id": "f_hartwell_supplier_list", "subject": "org_hartwell", "attribute": "supplier_list_published", "statement": "Hartwell publishes a list of its sewing factories and fabric mills.", "dimension": "transparency", "coverage": "scored", "scope": "whole_org", "sources": ["src_hartwell_suppliers"], "contributor": null, "validAsOf": "2026-01-15"},
+    {"id": "f_hartwell_benchmark", "subject": "org_hartwell", "attribute": "benchmark_score", "statement": "Hartwell scored 41% in an independent supply-chain transparency benchmark.", "dimension": "transparency", "coverage": "scored", "scope": "whole_org", "sources": ["src_benchmark"], "contributor": null, "validAsOf": "2025-11-01"},
+    {"id": "f_hartwell_recall", "subject": "org_hartwell", "attribute": "incident", "statement": "One colour of the Fleece Hoodie was recalled in 2024 over a zip pull that could come loose.", "dimension": "quality", "coverage": "scored", "scope": "products:prd_hartwell_hoodie", "sources": ["src_recall_notice"], "contributor": null, "validAsOf": "2024-05-20"},
+    {"id": "f_corvane_msa", "subject": "org_corvane", "attribute": "modern_slavery_statement", "statement": "Corvane Group files a yearly modern-slavery statement in the UK.", "dimension": "transparency", "coverage": "scored", "scope": "whole_org", "sources": ["src_uk_registry"], "contributor": null, "validAsOf": "2026-03-31"},
+    {"id": "f_hoodie_repair", "subject": "prd_hartwell_hoodie", "attribute": "repairability", "statement": "Spare zips are available on request, and the hoodie has a 5-year warranty.", "dimension": "quality", "coverage": "inferred", "scope": "product", "sources": ["src_creator_review"], "contributor": "ctr_creator", "validAsOf": "2026-07-01"},
+    {"id": "f_hoodie_price", "subject": "prd_hartwell_hoodie", "attribute": "price", "statement": "$68 at the Hartwell online store, checked 12 September 2026.", "dimension": "value", "coverage": "scored", "scope": "product", "sources": ["src_hartwell_hoodie_page"], "contributor": null, "validAsOf": "2026-09-12"},
+    {"id": "f_joggers_price", "subject": "prd_hartwell_joggers", "attribute": "price", "statement": "$58 at the Hartwell online store, checked 12 September 2026.", "dimension": "value", "coverage": "scored", "scope": "product", "sources": ["src_hartwell_joggers_page"], "contributor": null, "validAsOf": "2026-09-12"},
+    {"id": "f_grovia_landfill", "subject": "prd_grovia_hybrid", "attribute": "study_finding", "statement": "A reusable shell with disposable BioSoaker inserts sends less to landfill than fully disposable diapers.", "dimension": "planet", "coverage": "claimed", "scope": "product", "sources": ["src_pis_recs"], "contributor": "ctr_pis_study", "validAsOf": null},
+    {"id": "f_grovia_inserts", "subject": "prd_grovia_hybrid", "attribute": "study_finding", "statement": "The BioSoaker inserts are described as biodegradable.", "dimension": "planet", "coverage": "claimed", "scope": "product", "sources": ["src_pis_recs"], "contributor": "ctr_pis_study", "validAsOf": null},
+    {"id": "f_grovia_washing", "subject": "prd_grovia_hybrid", "attribute": "study_finding", "statement": "Reusable systems like this can have a lower climate impact per change, but only when washing is efficient; the result depends on wash method, load size and drying.", "dimension": "planet", "coverage": "inferred", "scope": "product", "sources": ["src_pis_cost", "src_ref_cedelft_lca", "src_ref_unep_nappies"], "contributor": "ctr_pis_study", "validAsOf": null},
+    {"id": "f_grovia_convenience", "subject": "prd_grovia_hybrid", "attribute": "study_finding", "statement": "Described as keeping disposable-style convenience for travel, daycare and errands.", "dimension": "quality", "coverage": "claimed", "scope": "product", "sources": ["src_pis_recs"], "contributor": "ctr_pis_study", "validAsOf": null},
+    {"id": "f_grovia_household", "subject": "prd_grovia_hybrid", "attribute": "study_finding", "statement": "Best suited to households willing to manage at least some reusable diapering.", "dimension": "quality", "coverage": "claimed", "scope": "product", "sources": ["src_pis_recs"], "contributor": "ctr_pis_study", "validAsOf": null},
+    {"id": "f_grovia_upfront", "subject": "prd_grovia_hybrid", "attribute": "study_finding", "statement": "Needs an upfront purchase of reusable shells as well as inserts.", "dimension": "value", "coverage": "claimed", "scope": "product", "sources": ["src_pis_cost"], "contributor": "ctr_pis_study", "validAsOf": null},
+    {"id": "f_dyper_redyper", "subject": "prd_dyper_redyper", "attribute": "study_finding", "statement": "Used diapers can go to industrial composting through the REDYPER take-back service, with prepaid shipping, in selected U.S. cities.", "dimension": "planet", "coverage": "claimed", "scope": "product", "sources": ["src_pis_cost", "src_ref_redyper_pickups", "src_ref_redyper_release"], "contributor": "ctr_pis_study", "validAsOf": null},
+    {"id": "f_dyper_industrial", "subject": "prd_dyper_redyper", "attribute": "study_finding", "statement": "Its compostability depends on industrial composting; that isn't the same as composting at home.", "dimension": "planet", "coverage": "inferred", "scope": "product", "sources": ["src_pis_cost"], "contributor": "ctr_pis_study", "validAsOf": null},
+    {"id": "f_dyper_safety", "subject": "prd_dyper_redyper", "attribute": "study_finding", "statement": "Positioned around Dermatest and OEKO-TEX skin-safety testing.", "dimension": "quality", "coverage": "claimed", "scope": "product", "sources": ["src_pis_recs"], "contributor": "ctr_pis_study", "validAsOf": null},
+    {"id": "f_dyper_ingredients", "subject": "prd_dyper_redyper", "attribute": "study_finding", "statement": "Discloses its ingredients in detail.", "dimension": "transparency", "coverage": "claimed", "scope": "product", "sources": ["src_pis_recs"], "contributor": "ctr_pis_study", "validAsOf": null},
+    {"id": "f_dyper_bcorp", "subject": "org_dyper", "attribute": "study_finding", "statement": "Dyper is a certified B Corporation and publishes its B Impact metrics.", "dimension": "transparency", "coverage": "inferred", "scope": "whole_org", "sources": ["src_pis_gov", "src_ref_dyper_bcorp"], "contributor": "ctr_pis_study", "validAsOf": null},
+    {"id": "f_dyper_price", "subject": "prd_dyper_redyper", "attribute": "study_finding", "statement": "Roughly $0.54–$1.08 per diaper (an illustrative range from the study).", "dimension": "value", "coverage": "claimed", "scope": "product", "sources": ["src_pis_cost"], "contributor": "ctr_pis_study", "validAsOf": null},
+    {"id": "f_naty_plant", "subject": "prd_naty_original", "attribute": "study_finding", "statement": "Uses plant-based materials on the side that touches the skin.", "dimension": "planet", "coverage": "claimed", "scope": "product", "sources": ["src_pis_recs"], "contributor": "ctr_pis_study", "validAsOf": null},
+    {"id": "f_naty_certs", "subject": "prd_naty_original", "attribute": "study_finding", "statement": "Marketed on its certifications; the study doesn't say which ones.", "dimension": "quality", "coverage": "claimed", "scope": "product", "sources": ["src_pis_recs"], "contributor": "ctr_pis_study", "validAsOf": null},
+    {"id": "f_naty_absorb", "subject": "prd_naty_original", "attribute": "study_finding", "statement": "Absorbed relatively well in some tests; the study doesn't say which tests.", "dimension": "quality", "coverage": "claimed", "scope": "product", "sources": ["src_pis_recs"], "contributor": "ctr_pis_study", "validAsOf": null},
+    {"id": "f_kudos_cotton", "subject": "prd_kudos_cotton", "attribute": "study_finding", "statement": "Has a cotton layer against the skin and pulp bleached without chlorine (TCF).", "dimension": "quality", "coverage": "claimed", "scope": "product", "sources": ["src_pis_recs"], "contributor": "ctr_pis_study", "validAsOf": null},
+    {"id": "f_kudos_pfas", "subject": "prd_kudos_cotton", "attribute": "study_finding", "statement": "PFAS (\"forever chemicals\") were not detected in testing; the study doesn't say who ran the test or what was tested.", "dimension": "quality", "coverage": "inferred", "scope": "product", "sources": ["src_pis_recs", "src_ref_kudos_pfas", "src_ref_mamavation_pfas"], "contributor": "ctr_pis_study", "validAsOf": null},
+    {"id": "f_kudos_ingredients", "subject": "prd_kudos_cotton", "attribute": "study_finding", "statement": "Communicates its ingredients openly.", "dimension": "transparency", "coverage": "claimed", "scope": "product", "sources": ["src_pis_recs"], "contributor": "ctr_pis_study", "validAsOf": null},
+    {"id": "f_kudos_compost", "subject": "prd_kudos_cotton", "attribute": "study_finding", "statement": "Isn't positioned as compostable.", "dimension": "planet", "coverage": "claimed", "scope": "product", "sources": ["src_pis_recs"], "contributor": "ctr_pis_study", "validAsOf": null},
+    {"id": "f_moltex_materials", "subject": "prd_moltex_pure", "attribute": "study_finding", "statement": "Marketed around natural-origin materials, a chlorine-free design and greener manufacturing.", "dimension": "planet", "coverage": "claimed", "scope": "product", "sources": ["src_pis_recs"], "contributor": "ctr_pis_study", "validAsOf": null},
+    {"id": "f_moltex_cotton", "subject": "prd_moltex_pure", "attribute": "study_finding", "statement": "Marketed as using soft cotton.", "dimension": "quality", "coverage": "claimed", "scope": "product", "sources": ["src_pis_recs"], "contributor": "ctr_pis_study", "validAsOf": null},
+    {"id": "f_moltex_availability", "subject": "prd_moltex_pure", "attribute": "study_finding", "statement": "Availability varies by region.", "dimension": "value", "coverage": "claimed", "scope": "product", "sources": ["src_pis_recs"], "contributor": "ctr_pis_study", "validAsOf": null},
+    {"id": "f_bambo_certs", "subject": "prd_bambo_dream", "attribute": "study_finding", "statement": "Holds a strong set of third-party skin-safety certifications; the study doesn't name them.", "dimension": "quality", "coverage": "claimed", "scope": "product", "sources": ["src_pis_recs"], "contributor": "ctr_pis_study", "validAsOf": null},
+    {"id": "f_bambo_landfill", "subject": "prd_bambo_dream", "attribute": "study_finding", "statement": "Isn't a complete answer to landfill or biodegradation concerns.", "dimension": "planet", "coverage": "inferred", "scope": "product", "sources": ["src_pis_recs"], "contributor": "ctr_pis_study", "validAsOf": null}
+  ],
+  "gaps": [
+    {"id": "g_riverside_wages", "subject": "site_riverside", "missing": "What workers at the sewing factory are paid", "dimension": "people", "tier": null, "searchedAt": "2026-09-12", "whereLooked": "the audit summary, Hartwell's sustainability report and NGO reports"},
+    {"id": "g_hoodie_cotton", "subject": "prd_hartwell_hoodie", "missing": "Where the cotton was grown", "dimension": "people", "tier": 4, "searchedAt": "2026-09-12", "whereLooked": "Hartwell's supplier list and sustainability report"},
+    {"id": "g_hoodie_carbon", "subject": "prd_hartwell_hoodie", "missing": "A carbon footprint for this product", "dimension": "planet", "tier": null, "searchedAt": "2026-09-12", "whereLooked": "the product page and Hartwell's sustainability report"},
+    {"id": "g_joggers_yarn", "subject": "prd_hartwell_joggers", "missing": "Who spins the yarn", "dimension": "people", "tier": 3, "searchedAt": "2026-09-12", "whereLooked": "Hartwell's supplier list"},
+    {"id": "g_joggers_cotton", "subject": "prd_hartwell_joggers", "missing": "Where the cotton was grown", "dimension": "people", "tier": 4, "searchedAt": "2026-09-12", "whereLooked": "Hartwell's supplier list and sustainability report"},
+    {"id": "g_joggers_durability", "subject": "prd_hartwell_joggers", "missing": "Any durability testing or long-term reviews", "dimension": "quality", "tier": null, "searchedAt": "2026-09-12", "whereLooked": "retailer reviews and contributor reports"},
+    {"id": "g_grovia_hybrid_maker", "subject": "prd_grovia_hybrid", "missing": "Who makes it and where", "dimension": "people", "tier": 1, "status": "not_researched", "searchedAt": "2026-11-16", "whereLooked": "only the team's draft diaper study so far"},
+    {"id": "g_grovia_hybrid_labour", "subject": "prd_grovia_hybrid", "missing": "Working conditions in its supply chain", "dimension": "people", "tier": null, "status": "not_researched", "searchedAt": "2026-11-16", "whereLooked": "only the team's draft diaper study so far"},
+    {"id": "g_grovia_hybrid_price", "subject": "prd_grovia_hybrid", "missing": "Its price", "dimension": "value", "tier": null, "status": "not_researched", "searchedAt": "2026-11-16", "whereLooked": "only the team's draft diaper study so far"},
+    {"id": "g_grovia_hybrid_chemicals", "subject": "prd_grovia_hybrid", "missing": "Independent chemical or safety testing", "dimension": "quality", "tier": null, "status": "not_researched", "searchedAt": "2026-11-16", "whereLooked": "only the team's draft diaper study so far"},
+    {"id": "g_grovia_hybrid_governance", "subject": "prd_grovia_hybrid", "missing": "The brand's certifications and governance", "dimension": "transparency", "tier": null, "status": "not_researched", "searchedAt": "2026-11-16", "whereLooked": "only the team's draft diaper study so far"},
+    {"id": "g_dyper_redyper_maker", "subject": "prd_dyper_redyper", "missing": "Who makes it and where", "dimension": "people", "tier": 1, "status": "not_researched", "searchedAt": "2026-11-16", "whereLooked": "only the team's draft diaper study so far"},
+    {"id": "g_dyper_redyper_labour", "subject": "prd_dyper_redyper", "missing": "Working conditions in its supply chain", "dimension": "people", "tier": null, "status": "not_researched", "searchedAt": "2026-11-16", "whereLooked": "only the team's draft diaper study so far"},
+    {"id": "g_dyper_redyper_performance", "subject": "prd_dyper_redyper", "missing": "Independent leak and absorbency testing", "dimension": "quality", "tier": null, "status": "not_researched", "searchedAt": "2026-11-16", "whereLooked": "only the team's draft diaper study so far"},
+    {"id": "g_dyper_redyper_chemicals", "subject": "prd_dyper_redyper", "missing": "Independent chemical test results", "dimension": "quality", "tier": null, "status": "not_researched", "searchedAt": "2026-11-16", "whereLooked": "only the team's draft diaper study so far"},
+    {"id": "g_naty_original_maker", "subject": "prd_naty_original", "missing": "Who makes it and where", "dimension": "people", "tier": 1, "status": "not_researched", "searchedAt": "2026-11-16", "whereLooked": "only the team's draft diaper study so far"},
+    {"id": "g_naty_original_labour", "subject": "prd_naty_original", "missing": "Working conditions in its supply chain", "dimension": "people", "tier": null, "status": "not_researched", "searchedAt": "2026-11-16", "whereLooked": "only the team's draft diaper study so far"},
+    {"id": "g_naty_original_price", "subject": "prd_naty_original", "missing": "Its price", "dimension": "value", "tier": null, "status": "not_researched", "searchedAt": "2026-11-16", "whereLooked": "only the team's draft diaper study so far"},
+    {"id": "g_naty_original_certs", "subject": "prd_naty_original", "missing": "Which certifications it holds", "dimension": "transparency", "tier": null, "status": "not_researched", "searchedAt": "2026-11-16", "whereLooked": "only the team's draft diaper study so far"},
+    {"id": "g_naty_original_eol", "subject": "prd_naty_original", "missing": "What happens to it after use", "dimension": "planet", "tier": null, "status": "not_researched", "searchedAt": "2026-11-16", "whereLooked": "only the team's draft diaper study so far"},
+    {"id": "g_kudos_cotton_maker", "subject": "prd_kudos_cotton", "missing": "Who makes it and where", "dimension": "people", "tier": 1, "status": "not_researched", "searchedAt": "2026-11-16", "whereLooked": "only the team's draft diaper study so far"},
+    {"id": "g_kudos_cotton_labour", "subject": "prd_kudos_cotton", "missing": "Working conditions in its supply chain", "dimension": "people", "tier": null, "status": "not_researched", "searchedAt": "2026-11-16", "whereLooked": "only the team's draft diaper study so far"},
+    {"id": "g_kudos_cotton_price", "subject": "prd_kudos_cotton", "missing": "Its price", "dimension": "value", "tier": null, "status": "not_researched", "searchedAt": "2026-11-16", "whereLooked": "only the team's draft diaper study so far"},
+    {"id": "g_kudos_cotton_eol", "subject": "prd_kudos_cotton", "missing": "What happens to it after use", "dimension": "planet", "tier": null, "status": "not_researched", "searchedAt": "2026-11-16", "whereLooked": "only the team's draft diaper study so far"},
+    {"id": "g_kudos_cotton_performance", "subject": "prd_kudos_cotton", "missing": "Independent leak and absorbency testing", "dimension": "quality", "tier": null, "status": "not_researched", "searchedAt": "2026-11-16", "whereLooked": "only the team's draft diaper study so far"},
+    {"id": "g_moltex_pure_maker", "subject": "prd_moltex_pure", "missing": "Who makes it and where", "dimension": "people", "tier": 1, "status": "not_researched", "searchedAt": "2026-11-16", "whereLooked": "only the team's draft diaper study so far"},
+    {"id": "g_moltex_pure_labour", "subject": "prd_moltex_pure", "missing": "Working conditions in its supply chain", "dimension": "people", "tier": null, "status": "not_researched", "searchedAt": "2026-11-16", "whereLooked": "only the team's draft diaper study so far"},
+    {"id": "g_moltex_pure_price", "subject": "prd_moltex_pure", "missing": "Its price", "dimension": "value", "tier": null, "status": "not_researched", "searchedAt": "2026-11-16", "whereLooked": "only the team's draft diaper study so far"},
+    {"id": "g_moltex_pure_testing", "subject": "prd_moltex_pure", "missing": "Certifications or independent testing", "dimension": "quality", "tier": null, "status": "not_researched", "searchedAt": "2026-11-16", "whereLooked": "only the team's draft diaper study so far"},
+    {"id": "g_moltex_pure_eol", "subject": "prd_moltex_pure", "missing": "What happens to it after use", "dimension": "planet", "tier": null, "status": "not_researched", "searchedAt": "2026-11-16", "whereLooked": "only the team's draft diaper study so far"},
+    {"id": "g_moltex_pure_governance", "subject": "prd_moltex_pure", "missing": "The brand's governance and transparency", "dimension": "transparency", "tier": null, "status": "not_researched", "searchedAt": "2026-11-16", "whereLooked": "only the team's draft diaper study so far"},
+    {"id": "g_bambo_dream_maker", "subject": "prd_bambo_dream", "missing": "Who makes it and where", "dimension": "people", "tier": 1, "status": "not_researched", "searchedAt": "2026-11-16", "whereLooked": "only the team's draft diaper study so far"},
+    {"id": "g_bambo_dream_labour", "subject": "prd_bambo_dream", "missing": "Working conditions in its supply chain", "dimension": "people", "tier": null, "status": "not_researched", "searchedAt": "2026-11-16", "whereLooked": "only the team's draft diaper study so far"},
+    {"id": "g_bambo_dream_price", "subject": "prd_bambo_dream", "missing": "Its price", "dimension": "value", "tier": null, "status": "not_researched", "searchedAt": "2026-11-16", "whereLooked": "only the team's draft diaper study so far"},
+    {"id": "g_bambo_dream_certs", "subject": "prd_bambo_dream", "missing": "Which certifications it holds", "dimension": "transparency", "tier": null, "status": "not_researched", "searchedAt": "2026-11-16", "whereLooked": "only the team's draft diaper study so far"},
+    {"id": "g_bambo_dream_performance", "subject": "prd_bambo_dream", "missing": "Independent leak and absorbency testing", "dimension": "quality", "tier": null, "status": "not_researched", "searchedAt": "2026-11-16", "whereLooked": "only the team's draft diaper study so far"}
+  ],
+  "assessments": [
+    {
+      "product": "prd_hartwell_hoodie",
+      "reviewedAt": "2026-09-12",
+      "dimensions": {
+        "planet": {
+          "score": 2,
+          "coverage": "inferred"
+        },
+        "people": {
+          "score": 3,
+          "coverage": "scored"
+        },
+        "quality": {
+          "score": 4,
+          "coverage": "inferred"
+        },
+        "value": {
+          "score": 3,
+          "coverage": "scored"
+        },
+        "transparency": {
+          "score": 4,
+          "coverage": "scored"
+        }
+      }
+    },
+    {
+      "product": "prd_hartwell_joggers",
+      "reviewedAt": "2026-09-12",
+      "dimensions": {
+        "planet": {
+          "score": null,
+          "coverage": "claimed"
+        },
+        "people": {
+          "score": null,
+          "coverage": "claimed"
+        },
+        "quality": {
+          "score": null,
+          "coverage": "unknown"
+        },
+        "value": {
+          "score": 3,
+          "coverage": "scored"
+        },
+        "transparency": {
+          "score": 4,
+          "coverage": "scored"
+        }
+      }
+    },
+    {
+      "product": "prd_grovia_hybrid",
+      "reviewedAt": "2026-11-16",
+      "dimensions": {
+        "planet": {
+          "score": null,
+          "coverage": "inferred"
+        },
+        "people": {
+          "score": null,
+          "coverage": "unknown"
+        },
+        "quality": {
+          "score": null,
+          "coverage": "claimed"
+        },
+        "value": {
+          "score": null,
+          "coverage": "claimed"
+        },
+        "transparency": {
+          "score": null,
+          "coverage": "unknown"
+        }
+      }
+    },
+    {
+      "product": "prd_dyper_redyper",
+      "reviewedAt": "2026-11-16",
+      "dimensions": {
+        "planet": {
+          "score": null,
+          "coverage": "inferred"
+        },
+        "people": {
+          "score": null,
+          "coverage": "unknown"
+        },
+        "quality": {
+          "score": null,
+          "coverage": "claimed"
+        },
+        "value": {
+          "score": null,
+          "coverage": "claimed"
+        },
+        "transparency": {
+          "score": null,
+          "coverage": "inferred"
+        }
+      }
+    },
+    {
+      "product": "prd_naty_original",
+      "reviewedAt": "2026-11-16",
+      "dimensions": {
+        "planet": {
+          "score": null,
+          "coverage": "claimed"
+        },
+        "people": {
+          "score": null,
+          "coverage": "unknown"
+        },
+        "quality": {
+          "score": null,
+          "coverage": "claimed"
+        },
+        "value": {
+          "score": null,
+          "coverage": "unknown"
+        },
+        "transparency": {
+          "score": null,
+          "coverage": "unknown"
+        }
+      }
+    },
+    {
+      "product": "prd_kudos_cotton",
+      "reviewedAt": "2026-11-16",
+      "dimensions": {
+        "planet": {
+          "score": null,
+          "coverage": "claimed"
+        },
+        "people": {
+          "score": null,
+          "coverage": "unknown"
+        },
+        "quality": {
+          "score": null,
+          "coverage": "inferred"
+        },
+        "value": {
+          "score": null,
+          "coverage": "unknown"
+        },
+        "transparency": {
+          "score": null,
+          "coverage": "claimed"
+        }
+      }
+    },
+    {
+      "product": "prd_moltex_pure",
+      "reviewedAt": "2026-11-16",
+      "dimensions": {
+        "planet": {
+          "score": null,
+          "coverage": "claimed"
+        },
+        "people": {
+          "score": null,
+          "coverage": "unknown"
+        },
+        "quality": {
+          "score": null,
+          "coverage": "claimed"
+        },
+        "value": {
+          "score": null,
+          "coverage": "claimed"
+        },
+        "transparency": {
+          "score": null,
+          "coverage": "unknown"
+        }
+      }
+    },
+    {
+      "product": "prd_bambo_dream",
+      "reviewedAt": "2026-11-16",
+      "dimensions": {
+        "planet": {
+          "score": null,
+          "coverage": "inferred"
+        },
+        "people": {
+          "score": null,
+          "coverage": "unknown"
+        },
+        "quality": {
+          "score": null,
+          "coverage": "claimed"
+        },
+        "value": {
+          "score": null,
+          "coverage": "unknown"
+        },
+        "transparency": {
+          "score": null,
+          "coverage": "unknown"
+        }
+      }
+    }
+  ],
+  "sources": [
+    {"id": "src_hartwell_suppliers", "tier": "self_reported", "publisher": "Hartwell", "title": "Hartwell supplier list 2026", "url": "https://example.com/hartwell/suppliers", "publishedAt": "2026-01-15"},
+    {"id": "src_hartwell_report", "tier": "self_reported", "publisher": "Hartwell", "title": "Hartwell sustainability report 2025", "url": "https://example.com/hartwell/report-2025", "publishedAt": "2025-12-31"},
+    {"id": "src_hartwell_hoodie_page", "tier": "self_reported", "publisher": "Hartwell", "title": "Fleece Hoodie product page", "url": "https://example.com/hartwell/fleece-hoodie", "publishedAt": "2026-09-12"},
+    {"id": "src_hartwell_joggers_page", "tier": "self_reported", "publisher": "Hartwell", "title": "Trail Joggers product page", "url": "https://example.com/hartwell/trail-joggers", "publishedAt": "2026-09-12"},
+    {"id": "src_sa8000_record", "tier": "third_party_audit", "publisher": "Certification body", "title": "SA8000 certificate record", "url": "https://example.com/sa8000/riverside", "publishedAt": "2025-06-30"},
+    {"id": "src_gots_record", "tier": "third_party_audit", "publisher": "Certification body", "title": "GOTS certified-supplier record", "url": "https://example.com/gots/riverside", "publishedAt": "2025-03-01"},
+    {"id": "src_benchmark", "tier": "third_party_audit", "publisher": "Benchmark publisher", "title": "Supply-chain transparency benchmark 2025", "url": "https://example.com/benchmark-2025", "publishedAt": "2025-11-01"},
+    {"id": "src_recall_notice", "tier": "regulatory", "publisher": "Product-safety regulator", "title": "Recall notice", "url": "https://example.com/recalls/hartwell-hoodie", "publishedAt": "2024-05-20"},
+    {"id": "src_uflpa", "tier": "regulatory", "publisher": "US Department of Homeland Security", "title": "UFLPA Entity List", "url": "https://www.dhs.gov/uflpa-entity-list", "publishedAt": "2026-09-01"},
+    {"id": "src_uk_registry", "tier": "regulatory", "publisher": "UK Home Office", "title": "Modern Slavery Statement Registry", "url": "https://modern-slavery-statement-registry.service.gov.uk/", "publishedAt": "2026-03-31"},
+    {"id": "src_creator_review", "tier": "first_hand_report", "publisher": "@demo.creator", "title": "One year with the Hartwell Fleece Hoodie", "url": "https://example.com/creator/hartwell-hoodie-review", "publishedAt": "2026-07-01"},
+    {"id": "src_import_research", "tier": "investigative", "publisher": "@demo.researcher", "title": "Tracing Hartwell's knitwear through import records", "url": "https://example.com/researcher/hartwell-imports", "publishedAt": "2026-05-10"},
+    {"id": "src_pis_summary", "tier": "research_draft", "publisher": "ClearCart team (Product Integrity Scorer, draft)", "title": "Diaper study: summary and methods", "url": "https://alx-du.github.io/product-integrity-scorer/Diapers.html", "publishedAt": null},
+    {"id": "src_pis_recs", "tier": "research_draft", "publisher": "ClearCart team (Product Integrity Scorer, draft)", "title": "Diaper study: recommendations", "url": "https://alx-du.github.io/product-integrity-scorer/Diapers-recommendations.html", "publishedAt": null},
+    {"id": "src_pis_cost", "tier": "research_draft", "publisher": "ClearCart team (Product Integrity Scorer, draft)", "title": "Diaper study: cost, environment and safety", "url": "https://alx-du.github.io/product-integrity-scorer/Diapers-cost-environment-safety.html", "publishedAt": null},
+    {"id": "src_pis_gov", "tier": "research_draft", "publisher": "ClearCart team (Product Integrity Scorer, draft)", "title": "Diaper study: governance and evidence", "url": "https://alx-du.github.io/product-integrity-scorer/Diapers-governance-evidence.html", "publishedAt": null},
+    {"id": "src_ref_redyper_pickups", "tier": "self_reported", "publisher": "Dyper", "title": "REDYPER pickups", "url": "https://dyper.com/products/redyper-pickups", "publishedAt": null},
+    {"id": "src_ref_redyper_release", "tier": "self_reported", "publisher": "Dyper (PR Newswire)", "title": "Dyper and TerraCycle REDYPER announcement", "url": "https://prnewswire.com/news-releases/dyper-introduces-the-worlds-first-compostable-diaper-partners-with-terracycle-to-implement-us-redyper-program-301005759.html", "publishedAt": null},
+    {"id": "src_ref_dyper_bcorp", "tier": "third_party_audit", "publisher": "B Lab", "title": "Dyper B Corp profile", "url": "https://bcorporation.net/find-a-b-corp/company/dyper-inc", "publishedAt": null},
+    {"id": "src_ref_kudos_pfas", "tier": "self_reported", "publisher": "Kudos", "title": "Kudos PFAS testing", "url": "https://mykudos.com/blogs/news/kudos-diapers-pfas", "publishedAt": null},
+    {"id": "src_ref_mamavation_pfas", "tier": "investigative", "publisher": "Mamavation", "title": "Mamavation diaper PFAS testing", "url": "https://mamavation.com/motherhood/diapers-pfas-forever-chemicals.html", "publishedAt": null},
+    {"id": "src_ref_cedelft_lca", "tier": "investigative", "publisher": "CE Delft", "title": "LCA of centralised washing of cloth diapers", "url": "https://cedelft.eu/wp-content/uploads/sites/2/2025/12/CE_Delft_250264_LCA_centralised_washing_of_cloth_diapers_Def.pdf", "publishedAt": "2025-12-01"},
+    {"id": "src_ref_unep_nappies", "tier": "investigative", "publisher": "UNEP Life Cycle Initiative", "title": "UNEP nappies lifecycle report", "url": "https://lifecycleinitiative.org/wp-content/uploads/2021/03/UNEP-D003-Nappies-Report_lowres.pdf", "publishedAt": "2021-03-01"}
+  ],
+  "contributors": [
+    {"id": "ctr_creator", "handle": "@demo.creator", "platform": "Instagram", "about": "Wore the hoodie for a year; checked the care label and spare-parts policy.", "disclosure": "No paid partnership with Hartwell"},
+    {"id": "ctr_researcher", "handle": "@demo.researcher", "platform": "Independent researcher", "about": "Traced Hartwell's knitwear and yarn through public import records.", "disclosure": "No affiliate links"},
+    {"id": "ctr_pis_study", "handle": "Product Integrity Scorer diaper study", "platform": "ClearCart team research (draft)", "about": "Compared six diaper alternatives on cost, environment, chemical safety, performance, end-of-life and governance.", "disclosure": "Draft; its claims aren't linked to specific sources"}
+  ]
+}

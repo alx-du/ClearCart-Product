@@ -1,0 +1,7 @@
+{
+  "_about": "Public risk lists matched against a product's category and country of origin (lookup ladder, country rung). Intentionally empty: rows must come from the real lists, never be typed from memory. Each row: { \"id\", \"list\", \"good\", \"country\", \"risk\": \"child_labour\" | \"forced_labour\", \"source\" }, where \"good\" uses the list's own name (e.g. \"Garments\", \"Cotton\") and \"source\" is a source id in this file's \"sources\". The US Department of Labor's List of Goods Produced by Child Labor or Forced Labor is published as a spreadsheet at https://www.dol.gov/agencies/ilab/reports/child-labor/list-of-goods (its server refuses scripted downloads, so download it in a browser).",
+  "sources": [
+    { "id": "src_dol_goods_2024", "tier": "regulatory", "publisher": "US Department of Labor (ILAB)", "title": "List of Goods Produced by Child Labor or Forced Labor (2024)", "url": "https://www.dol.gov/agencies/ilab/reports/child-labor/list-of-goods", "publishedAt": "2024-09-05" }
+  ],
+  "rows": []
+}

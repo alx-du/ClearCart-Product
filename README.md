@@ -1,68 +1,67 @@
 # ClearCart
 
-A React product-research chat interface with a Microsoft Foundry prompt agent. Production uses Azure Static Web Apps with managed Azure Functions in the `api` directory. Express remains available for local development.
+A product research site. Search for a product: if ClearCart has researched it, you get a page rating it on five separate dimensions (planet, people & supply chain, quality, value, transparency), with a source for every fact and the gaps stated plainly. If it hasn't, you see what's known about related records — the brand, its owner, where it makes its other products, country risk lists — and can ask for it to be researched.
+
+No visitor request calls an AI model. The frontend is a static site on GitHub Pages; a small Express server (`server/`) serves the catalogue and runs web lookups with [Tavily](https://tavily.com).
+
+```
+Browser (GitHub Pages)  ──►  ClearCart server (Express)  ──►  Tavily (web lookups only,
+                              catalogue JSON, lookup ladder,     cached and rate-limited)
+                              request queue
+```
+
+**The catalogue currently holds demo data only:** a made-up brand (Hartwell, owned by Corvane Group) with two products. The site labels it as demo data.
 
 ## How a search works
 
-1. The opening screen is the ClearCart heading, a tagline, and the input. The text goes to `/api/resolve-product`, which searches with [Tavily](https://tavily.com) and then makes one small model call (the `FOUNDRY_MODEL_DEPLOYMENT` deployment, not the agent) to turn the results into up to three clean product names, each with a product photo when one is found. The user can also paste a product link: Tavily reads the page and the same model call names the product on it.
-2. The user confirms a candidate ("Yes, that's it" / "No, show another"). Confirming adds the product to their cart (a history entry) and starts the initial assessment through the Foundry agent.
-3. Once the assessment is shown, starter prompts appear and the input becomes a follow-up box, answered by the same agent in plain text.
+1. **Catalogue first.** The search box matches the catalogue (product names, aliases, brands). This is free and instant.
+2. **Product page.** A researched product shows five dimensions, each with a score (or none), a coverage badge (scored, inferred, claimed, unknown) and its evidence: facts with sources, and "Not public" gaps. Also where it's made (tiers 1–4), who reported it, and a conclusion. There is no overall score.
+3. **Related knowledge.** For anything else, "Look up on the web" makes one Tavily search (cached for 7 days) and reads the results with text patterns: brand, material, country of origin, maker. The page then shows facts about the brand, its owner, the brand's other factories (context only) and country risk. Nothing on it is scored, because none of it is about that product. Visitors can add it to the research queue.
 
-Set `TAVILY_API_KEY` in `.env` for live lookups (get a key from Tavily). Naming also needs the Foundry settings below; without them the lookup falls back to cleaning page titles, which gives noticeably worse names. The three demo products below need no keys at all.
+## Configure
 
-## Configure Microsoft Foundry
+Copy `.env.example` to `.env`. Everything is optional:
 
-1. Copy `.env.example` to `.env`.
-2. Set `FOUNDRY_PROJECT_ENDPOINT` to the endpoint shown for your Foundry project.
-3. Set `FOUNDRY_MODEL_DEPLOYMENT` to an existing model deployment name in that project.
-4. Set `FOUNDRY_AGENT_NAME` to the name ClearCart should use for its prompt agent.
-5. Sign in locally with Azure CLI (`az login`) or the Azure extension in VS Code. The signed-in identity needs the **Foundry User** role on the project.
-6. Run `npm run agent:create` once to create a new agent version. Run it again only when changing the model or agent instructions. (The instructions now distinguish assessments from follow-up questions, so re-run it after pulling this change or follow-up answers will still come back as assessment JSON.)
+- `TAVILY_API_KEY` enables web lookups. Without it, a lookup uses only the words of the search.
+- `TAVILY_DAILY_LIMIT` caps Tavily searches per day (default 200). Each visitor is also limited to 15 per hour; cached lookups don't count.
+- `DEMO_MODE=true` never calls Tavily.
+- `TRUST_PROXY` (e.g. `1`) when the server runs behind a proxy or tunnel, so per-visitor limits see real addresses.
+- `CORS_ORIGINS`: the GitHub Pages origin, so the browser may call the server.
 
-Azure Static Web Apps managed Functions do not support managed identity. Production therefore uses `AZURE_TENANT_ID`, `AZURE_CLIENT_ID`, and `AZURE_CLIENT_SECRET` for an app registration assigned the **Foundry Agent Consumer** role on the project. Store these values only in Static Web Apps application settings.
+The `AI_*` settings are only for `npm run descriptions:build` (below), never for visitor requests. They point at an OpenAI-compatible endpoint, normally the Ethical Tech CoLab [pages-ai-proxy](https://github.com/Ethical-Tech-CoLab/pages-ai-proxy).
 
-## Deploy to Azure Static Web Apps
+## Product descriptions
 
-Create a Free Static Web App connected to this repository with:
+The one-line summary for each dimension and the conclusion on a product page are written from the product's facts, not typed by hand. `npm run descriptions:build` asks the model to write any description whose facts have changed since it was last written, checks the result (every sentence must cite the facts it rests on; no "ethical", "best" or similar; no "verified" for unverified evidence), and stores it in `server/data/descriptions.json` with a hash of the facts it came from. When the facts change, the page shows a plain summary built from the facts until the build runs again.
 
-- App location: `/`
-- API location: `api`
-- Output location: `dist`
-- Frontend build command: `npm run build`
-- API runtime: Node.js 20
+- To use Claude, set `AI_DESCRIPTION_PROVIDER=anthropic` and `ANTHROPIC_API_KEY` (model `claude-opus-5-5` unless `CLAUDE_MODEL` says otherwise). Otherwise it uses the OpenAI-compatible `AI_ENDPOINT`, e.g. a local Ollama model (see `.env.example`).
+- `npm run descriptions:build -- --dry-run` lists what's out of date.
+- `npm run descriptions:build -- --force` rewrites everything.
+- Set `"reviewed": true` on an entry once someone has checked it.
 
-Configure these production application settings:
+## Catalogue data
 
-- `TAVILY_API_KEY`
-- `FOUNDRY_PROJECT_ENDPOINT`
-- `FOUNDRY_AGENT_NAME`
-- `AZURE_TENANT_ID`
-- `AZURE_CLIENT_ID`
-- `AZURE_CLIENT_SECRET`
+`server/data/catalogue.json` holds products, brands and other organizations, factories (sites), each product's supply chain, facts, gaps, curated assessments, sources and contributors. Facts attach to whatever they're about, so a factory's audit is stored once and shows up on every product made there. `server/data/risk-reference.json` is for government risk lists, such as the US Department of Labor's List of Goods Produced by Child Labor or Forced Labor. It is empty until someone loads the real list; see the note in the file.
 
-`FOUNDRY_MODEL_DEPLOYMENT` is needed when running `npm run agent:create` and, because product-name lookup calls the model deployment directly, in production too. That direct call is not made through the agent, so confirm the production app registration is allowed to call the model deployment, not only the agent (this has only been tried with a developer identity).
+The server writes its search cache and research-request counts to `server/data/runtime/` (not in git).
+
+## Deploy
+
+**Frontend (GitHub Pages).** `.github/workflows/deploy-pages.yml` builds and publishes on every push to `main`. One-time setup in the repository settings:
+
+1. Pages → Source: **GitHub Actions**.
+2. Actions → Variables: `CLEARCART_API_URL` = the public URL of the ClearCart server (no trailing slash).
+
+**Backend (ClearCart server).** Run `npm ci && npm start` anywhere Node 22 runs, for example on the CoLab's B3IQ machine behind a Cloudflare Tunnel. Set the variables above, including `CORS_ORIGINS` = the Pages origin (e.g. `https://alx-du.github.io`). The server also serves the built frontend itself, so it can host the whole app on its own.
 
 ## Run locally
 
-Install dependencies with `npm install`, then run `npm run dev`. This starts both the Express API on port 8787 and Vite on its normal development port. To emulate the Static Web Apps Functions API locally, copy `api/local.settings.example.json` to `api/local.settings.json`, install Azure Functions Core Tools, and run the Static Web Apps CLI.
-
-## Run locally without any Azure setup (demo mode)
-
-`/api/resolve-product` and `/api/chat` check a small hand-seeded response cache (`server/lib/responseCache.js`) before ever calling Tavily or Foundry. A cache hit needs no credentials, no `.env`, and never touches the network — so `npm install && npm run dev` works immediately: enter one of **iPhone 15 Pro**, **Nike Air Force 1**, or **Patagonia Better Sweater Fleece**, confirm it, and you get the full assessment. Follow-up questions are not covered (they need the live agent).
-
-Anything else falls through to the real Tavily and Foundry calls (and errors, if you haven't configured credentials above). To make a cache miss fail gracefully instead — useful for a demo where you only want to show off the seeded products — set `DEMO_MODE=true`:
-
-```
-DEMO_MODE=true npm run dev
-```
-
-Note: the seeded cache entries are placeholder content for exercising the UI, not real researched/cited product data.
+`npm install`, then `npm run dev`. This starts the Express API on port 8787 and Vite on its usual port (Vite forwards `/api` to Express). Try searching for "hartwell".
 
 ## Other commands
 
+- `npm run descriptions:build` — write product descriptions that are out of date
 - `npm run lint` — lint the project
 - `npm run build` — create a production frontend build
-- `npm run build:api` — install the managed Functions dependencies
-- `npm run check:api` — syntax-check the managed Functions entry points
 - `npm run dev:api` — run only the Express API
 - `npm run dev:web` — run only Vite
