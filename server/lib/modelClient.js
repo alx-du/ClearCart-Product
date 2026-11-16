@@ -60,6 +60,32 @@ async function chatCompletion({ model, messages, timeoutMs, extra = {} }) {
   return typeof content === 'string' ? content.replace(/<think>[\s\S]*?<\/think>/g, '').trim() : ''
 }
 
+export function configuredModel(name = 'AI_MODEL') {
+  return process.env[name]?.trim() || process.env.AI_MODEL?.trim() || null
+}
+
+// Instructions + one input, returning the reply text. For offline jobs such
+// as writing descriptions; `model` defaults to AI_MODEL. With AI_JSON_MODE=true,
+// `schema` (a JSON Schema) makes the endpoint return only JSON of that shape
+// (Ollama, OpenAI and llama.cpp support this; small local models need it).
+// Off by default because some endpoints reject the parameter.
+export async function invokeText({ instructions, input, model = configuredModel(), timeoutMs = ASSISTANT_TIMEOUT_MS, schema = null }) {
+  if (!model) throw new Error('AI_MODEL is required to call the model')
+  const responseFormat =
+    schema && process.env.AI_JSON_MODE === 'true'
+      ? { type: 'json_schema', json_schema: { name: 'reply', schema } }
+      : null
+  return chatCompletion({
+    model,
+    messages: [
+      { role: 'system', content: instructions },
+      { role: 'user', content: input },
+    ],
+    timeoutMs,
+    extra: responseFormat ? { response_format: responseFormat } : {},
+  })
+}
+
 // A plain call with no ClearCart system prompt, for small utility tasks like
 // naming products.
 export async function invokeModel({ instructions, input }) {

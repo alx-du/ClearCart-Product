@@ -19,6 +19,15 @@
   --color-accent-700: oklch(51.1% 0.096 186.391);
   --color-accent-800: oklch(43.7% 0.078 188.216);
   --color-accent-900: oklch(38.6% 0.063 188.416);
+
+  /* Categorical chart colors (material donut), in this fixed order: slot 1 is
+     accent-600, then these two. Teal/orange/violet passed the dataviz palette
+     validator on white with all pairs compared (CVD ΔE >= 10.9, normal-vision
+     ΔE >= 25.1, each >= 3:1 against white). accent-700 failed the chroma floor,
+     and blue was skipped because the "claimed" badge is blue. Re-run the
+     validator if you change them. */
+  --color-chart-2: #eb6834;
+  --color-chart-3: #6250d6;
 }
 
 @layer base {
@@ -51,23 +60,4 @@
 .sidebar-scroll {
   scrollbar-width: thin;
   scrollbar-color: rgba(50, 100, 95, 0.45) transparent;
-}
-
-/* Lets the input glide from the centered hero position to the bottom bar
-   (Home wraps it in .chat-input-shell and uses document.startViewTransition). */
-.chat-input-shell {
-  view-transition-name: chat-input;
-}
-
-::view-transition-group(chat-input) {
-  animation-duration: 450ms;
-  animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  ::view-transition-group(*),
-  ::view-transition-old(*),
-  ::view-transition-new(*) {
-    animation: none !important;
-  }
 }

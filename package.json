@@ -13,9 +13,11 @@
     "start": "node server/index.js",
     "build": "vite build",
     "lint": "oxlint",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "descriptions:build": "node scripts/buildDescriptions.js"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^1.9.0",
     "cheerio": "^1.2.0",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",

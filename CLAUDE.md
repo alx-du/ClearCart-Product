@@ -1,10 +1,15 @@
 # ClearCart
 
-A chat-style product research assistant. A user types a product name into a
-chat box; the app finds/assesses that product and gives it a
-multi-dimensional rating (planet impact, people & supply chain, quality,
-value, transparency) with sourced explanations — similar to how a capstone
-research paper's rubric would score a product.
+A product research site. A user searches for a product; if ClearCart has
+researched it, they get a page rating it on five separate dimensions (planet
+impact, people & supply chain, quality, value, transparency) with a source
+for every fact — similar to how a capstone research paper's rubric would
+score a product. If it hasn't, they get what ClearCart knows about related
+records (the brand, its owner, its factories, country risk lists) and can ask
+for the product to be researched. Positioned as a curation/review board that
+credits contributors (content creators, researchers), not a certified source
+of truth. **No visitor request calls an LLM** (decided with Alex, Oct 2026:
+paying per visitor for model calls isn't sustainable).
 
 The original design is a Figma-style mockup with two frames: an empty chat
 state ("Let's look at a product together") and a populated state showing a
@@ -35,18 +40,22 @@ implemented in this repo, not the roadmap.
 - **Hosting:** the frontend is a static build on **GitHub Pages**
   (`.github/workflows/deploy-pages.yml`); the Express server is self-hosted
   separately (e.g. on the CoLab's B3IQ machine) and called cross-origin.
-- **Model access:** plain `fetch` to any **OpenAI-compatible
-  `/v1/chat/completions` endpoint** (`server/lib/modelClient.js`), normally the
-  Ethical Tech CoLab **pages-ai-proxy**
-  (github.com/Ethical-Tech-CoLab/pages-ai-proxy, private org repo), which
-  injects the provider token and routes the model id to a cloud API or a local
-  B3IQ GPU model. Which model to use is deliberately undecided — it's just
-  `AI_MODEL`. See below.
+- **Catalogue data:** JSON files in `server/data/` loaded at startup (no
+  database yet; BACKLOG mentions a `server/db/schema.prisma`, but it doesn't
+  exist). Runtime state (search cache, research requests) is written to
+  `server/data/runtime/` (gitignored).
+- **Web search:** Tavily, read with text patterns, never a model.
+- **Model access (never in a request path):** `server/lib/modelClient.js` calls
+  any OpenAI-compatible `/v1/chat/completions` endpoint, normally the Ethical
+  Tech CoLab **pages-ai-proxy** (github.com/Ethical-Tech-CoLab/pages-ai-proxy,
+  private org repo). Used only by the offline description build (`npm run
+  descriptions:build`, see "Product descriptions").
 - No test framework set up (`npm test` runs nothing).
 
 Run locally: `npm install && npm run dev` (runs Express on :8787 and Vite on
 :5173 concurrently, via `concurrently`; Vite proxies `/api/*` to Express in
-dev). See "Product lookup" for what does/doesn't need credentials.
+dev). The catalogue needs no credentials; only the web lookup needs
+`TAVILY_API_KEY` (without it, lookups use the search words alone).
 
 Node/npm were not preinstalled in the dev sandbox this was built in — if
 that's true in a fresh environment too, install via `apt-get install -y
@@ -59,54 +68,87 @@ themselves) before `npm install` will work. `package.json` pins
 ```
 src/
   App.jsx                  — routes (all under a shared Layout)
-  components/
-    Layout.jsx              — flex shell: main content (Outlet) + Sidebar
-    Sidebar.jsx              — persistent right sidebar: logo, nav, history list
-    ChatInput.jsx            — the pill-shaped message input + send button;
-                               `size="large"` is the centered opening-screen variant
-    AssessmentCard.jsx       — the rubric result card (dimensions, coverage badges,
-                               expandable sources, conclusion). Wired in and used.
-    ProductConfirmCard.jsx   — the "Found it!" card for one candidate: thumbnail
-                               (hidden if it fails to load), name, source link,
-                               Yes / "No, show another" buttons, and "← Back"
-                               (from the second result on)
   main.jsx                 — BrowserRouter with basename = Vite's BASE_URL (the
                              Pages build uses base /<repo>/)
+  components/
+    Layout.jsx              — main area (scrolls) + Sidebar; a slim top bar with
+                               Search/Catalogue links on phones (sidebar is md+ only)
+    Sidebar.jsx              — persistent right sidebar: logo, nav, "Previous Carts"
+                               (recently viewed products and lookups)
+    SearchInput.jsx          — the pill-shaped search box; `size="large"` on the
+                               opening screen
+    Badges.jsx               — CoverageBadge (4 coverage states + "context only" and
+                               "country level"), ScoreDots, DemoNotice
+    Evidence.jsx             — FactItem / GapItem / EvidenceList / SourceLine: a fact
+                               with its source tier, links, date and contributor; a
+                               gap as a dashed "Not public: …" box
+    PageStatus.jsx           — Loading, LoadError, BackToSearch
   hooks/
-    useCarts.js               — subscribes a component to the carts localStorage store
+    useApi.js                 — GET a url; result keyed by url (no setState-in-effect)
+    useHistory.js             — subscribes to the history localStorage store
   lib/
-    carts.js                  — localStorage-backed chat history ("carts") CRUD
+    api.js                    — getJson/postJson, prefixed with VITE_API_BASE_URL
+                                 (empty in dev; the server's URL in the Pages build)
+    history.js                — localStorage "Previous Carts" list
   pages/
-    Home.jsx                  — the chat page: opening screen → product lookup &
-                                 confirm → assessment → follow-ups (see "Chat /
-                                 history behavior"); POSTs to /api/resolve-product
-                                 and /api/chat, prefixed with VITE_API_BASE_URL (empty in
-                                 dev; the server's URL in the Pages build)
+    Home.jsx                  — opening screen; with ?q= shows catalogue results,
+                                 known brands, and a "Look up on the web" link
+    Product.jsx               — /product/:id, a researched product
+    Lookup.jsx                — /lookup?q=, related knowledge for an unresearched
+                                 product + the research-request button
+    Catalogue.jsx             — /catalogue (?brand=id): product list, also the brand page
     About.jsx, CapstonePaper.jsx, TechnicalOverview.jsx — placeholder content pages
 
 server/                    — the only backend (`node server/index.js`)
-  index.js                  — /api/resolve-product, /api/chat, CORS for CORS_ORIGINS,
-                               and serves dist/ (so it can host the whole app alone)
+  index.js                  — routes (below), CORS for CORS_ORIGINS, per-IP limits,
+                               serves dist/ (so it can host the whole app alone)
+  data/
+    catalogue.json           — the catalogue: products, organizations, sites,
+                               supply-chain nodes, materials, facts, gaps,
+                               assessments, sources, contributors. DEMO DATA ONLY
+                               (fictional Hartwell / Corvane Group)
+    risk-reference.json      — government risk-list rows (DOL goods list etc.);
+                               deliberately EMPTY — see "Lookup ladder"
+    descriptions.json        — generated description cache (committed once built;
+                               doesn't exist until the first `descriptions:build`)
+    runtime/                 — gitignored: web-lookups.json, requests.json
   lib/
-    modelClient.js           — chat-completions calls: `invokeAssistant` (assessment /
-                               follow-up, with the ClearCart system prompt) and
-                               `invokeModel` (plain call for utility tasks like naming)
-    responseCache.js         — hand-seeded cache checked before ever calling the model
-                               or Tavily (also exports simulateThinkingDelay)
-    tavilySearch.js          — product-name lookup: Tavily search + model naming
-                               (title-cleanup heuristics as the fallback)
-    productLookup.js         — JSON-LD product-page parser, orphaned (no caller —
-                               its only caller, a Brave-Search-powered
-                               /api/products/search route, was removed; see below)
+    catalogue.js             — loads the data; search; collectForProduct (the
+                               fact-collection rules); getProductView
+    descriptions.js          — dimension summaries + conclusion: inputs, hash,
+                               cache lookup (descriptions.json), template fallback
+    descriptionModel.js      — writes one description with the model and checks it
+                               (offline build only)
+    webLookup.js             — observeProduct: brand/material/origin/maker/category
+                               from the query + one cached Tavily search, by regex
+    lookupLadder.js          — buildRelated: the related-knowledge page sections
+    researchRequests.js      — request counts per normalized query
+    rateLimit.js             — in-memory per-IP sliding-window limiter
+    runtimeStore.js          — atomic JSON writes to data/runtime/
+    tavilySearch.js          — Tavily calls. `searchListings` is used by the lookup;
+                               the rest (`searchProductCandidates`, model naming)
+                               is from the old chat flow and has no caller now
+    modelClient.js           — OpenAI-compatible model calls; `invokeText` is used
+                               by the description build; the rest has no caller
+    productLookup.js         — JSON-LD product-page parser, orphaned (older still)
 
 .github/workflows/deploy-pages.yml — builds the frontend with --base=/<repo>/ and
                                VITE_API_BASE_URL from the CLEARCART_API_URL repo
                                variable, copies index.html → 404.html (Pages has no
                                SPA rewrites), deploys to GitHub Pages
+
+scripts/buildDescriptions.js — `npm run descriptions:build`: rewrites stale
+                               descriptions (--dry-run lists them, --force all)
+
+sandbox/ (gitignored)       — product-entry-example.txt, the schema sketch the
+                               catalogue follows (sections referenced as "sandbox §N")
 ```
 
-Routes: `/` (Home/chat), `/about`, `/capstone-paper`, `/technical-overview`.
-All render inside `Layout`, so the sidebar never unmounts between pages.
+Routes: `/` (search), `/product/:id`, `/lookup?q=`, `/catalogue`, `/about`,
+`/capstone-paper`, `/technical-overview`. All render inside `Layout`, so the
+sidebar never unmounts between pages. A UI mockup of the search / product /
+related pages is at https://claude.ai/artifact/LvfgLhgC39wohADjV1h8PX
+(private to Kai unless shared).
 
 ## Design system
 
@@ -115,7 +157,7 @@ something **bright, high-contrast, and easy to read for older users** — this
 was an explicit ask, not just a style preference:
 
 - Primary accent: **`accent-800`** (= Tailwind teal-800) — solid buttons,
-  badges, the user's chat bubble, the assessment "Conclusion" block, headings,
+  badges, the product page's "Conclusion" block and request card, headings,
   and the sidebar's active pill. It replaced teal-600 for solid fills, where
   white text was only 3.7:1 (fails AA); white on accent-800 is 7.5:1 and hover
   is `accent-900` (9.4:1). `accent-600` (= teal-600) remains only for the input
@@ -127,20 +169,19 @@ was an explicit ask, not just a style preference:
   original teal.
 - **Page theme:** the main area is flat white (a soft mist gradient was tried
   and rejected). Content sits in white **`.panel`** cards (defined in
-  `index.css`: rounded, soft teal-tinted shadow, hairline ring) — chat bubbles,
-  the confirm and assessment cards, starter prompts and the sidebar panels all
+  `index.css`: rounded, soft teal-tinted shadow, hairline ring) — search
+  results, the product and lookup sections and the sidebar panels all
   use it, so on a white page they separate by shadow and ring only; raise the
   ring opacity if they look faint. Outline buttons are `border-accent-800` /
   `text-accent-800`, and every hover uses the same `mist-300` tint as the
-  sidebar. The chat input floats (no bar or top border) with an `accent-600`
-  border.
+  sidebar. The search box has an `accent-600` border.
   The `mist-100/200/300` tints and `accent-*` shades are custom theme colors in
   `index.css`.
 - Base font size bumped site-wide from 16px → 18px via `html { font-size:
   112.5% }` in `src/index.css`, rather than overriding every Tailwind text
   utility individually.
 - High-contrast text everywhere: dark gray-900 text on white/light
-  backgrounds instead of white-on-dark, larger touch targets (chat input,
+  backgrounds instead of white-on-dark, larger touch targets (search box,
   buttons, nav links all have generous padding).
 - The active sidebar nav link renders as a solid white pill (not just a bold
   font-weight change) — bold-only state changes are hard to perceive, a
@@ -165,211 +206,195 @@ was an explicit ask, not just a style preference:
   "sunset" versions existed; when trying other palettes, keep dark text on the
   white panels and re-check contrast with Tailwind's real color values.
 
-## Chat / history behavior (implemented)
+## Search flow (implemented)
 
-- **One session = one product.** The flow in `Home.jsx`:
-  1. *Opening screen*: the original front page — "ClearCart 🛒" heading and the
-     tagline "Let's look at a product together." (restored from the initial
-     design; a later commit had swapped in "Shop with more confidence") — with a
-     large input directly below the tagline so the next step is obvious, and no
-     starter prompts. Submitting the first search moves the input to the
-     bottom bar with a View Transition (`.chat-input-shell` in `index.css`;
-     browsers without the API swap instantly, reduced-motion disables it). The
-     mobile header is hidden on this screen since the heading already says it.
-  2. *Lookup*: the input text — a product name or a pasted product link — goes
-     to `/api/resolve-product` (Tavily, then a small model call that names the
-     product and picks a photo). The result is shown as a `ProductConfirmCard`
-     with a thumbnail; "No, show another"
-     cycles through up to 3 candidates, then offers a retype, and "← Back"
-     (from the second result on) steps back without rejecting anything — so all
-     three can be reviewed before committing. The input is
-     locked while a candidate awaits a decision. Nothing is saved yet.
-  3. *Confirm*: "Yes" creates the cart (history entry) and immediately requests
-     the initial assessment (`/api/chat`, `mode: 'assessment'`, sending just the
-     confirmed name). A failed assessment shows a "Try again" button.
-  4. *Follow-ups*: once the assessment finishes, the three starter prompts
-     appear. The input is now a follow-up box (`/api/chat`, `mode: 'chat'`,
-     with the confirmed name + assessment JSON + prior Q&A as context). The
-     starters disappear after the first follow-up. Researching a different
-     product means starting a new chat (logo link).
-- Message shapes carry a `kind`: `search`, `confirm`, `assessment`,
-  `followup`, `answer`. `toModelMessages` decides what the model sees (raw
-  search text and confirm-card steps are UI-only). Carts saved before this
-  flow have no `kind`; they still load and work as follow-up sessions.
-- **One sidebar history entry per chat session, not per message.** The cart is
-  created when the user confirms a product (`lib/carts.js: addCart`); every
-  later message in that session updates that same cart in place
-  (`updateCart`) and bumps it to the top of the list, instead of creating a
-  new sidebar item each time. This was a deliberate fix — the first pass
-  created one cart per message, which was wrong.
-- Carts persist to `localStorage` (`clearcart_carts`, capped at the 30 most
-  recent), no account/backend needed. `useCarts.js` uses a custom
-  `window` event (`clearcart:carts-updated`) plus the native `storage` event
-  so the Sidebar re-renders live when Home writes a new cart, including
-  across tabs.
-- Clicking a past cart in the sidebar (`<Link to="/" state={{cartId}}>`)
-  reopens that saved conversation. `Home` is remounted on every navigation
-  to `/` via a `key={location.key}` wrapper in `App.jsx` (see `HomeRoute`),
-  so the reopened cart's messages initialize cleanly via a lazy `useState`
-  initializer rather than a `setState`-in-`useEffect` pattern (oxlint flags
-  the latter as an anti-pattern — deriving state directly on remount is the
-  cleaner fix).
+1. *Opening screen* (`/`): "ClearCart 🛒" and "Let's look at a product
+   together." with a large search box.
+2. *Catalogue results* (`/?q=…`): `GET /api/catalogue/search` — free, no
+   external call. Words match as prefixes against product names, aliases,
+   product line and brand, so typing a brand lists its products. Groups: "In our
+   catalogue" (→ product page), "Brands we know" (→ `/catalogue?brand=`), and
+   unless there's an exact match, "Look up “…” on the web" (→ `/lookup?q=`).
+   The web lookup is a deliberate extra click so searches the catalogue can
+   answer never spend a Tavily credit.
+3. *Product page* (`/product/:id`): a key explaining the four coverage badges,
+   then five dimension rows (score dots + coverage badge + one-line summary +
+   chevron), each expanding to its evidence (facts and gaps; one row open at a
+   time); a material donut chart in the header;
+   "Where it's made" tier 1–4; "Who reported this" (contributors with their
+   disclosures); conclusion; more from the brand. No composite score.
+4. *Related-knowledge page* (`/lookup?q=`): see "Lookup ladder". An exact
+   catalogue match redirects to the product page instead.
+- "Previous Carts" in the sidebar now lists recently viewed product pages and
+  lookups (`lib/history.js`, localStorage `clearcart_history`, max 30, one entry
+  per page). The old chat-session carts (`clearcart_carts`) are ignored.
+- The chat flow (confirm card, live model assessment, follow-up questions) and
+  `/api/resolve-product` + `/api/chat` were removed on the `catalogue-lookup`
+  branch, along with the 3 hand-written real-brand cache entries
+  (`responseCache.js`), whose unsourced AI-written facts shouldn't appear as
+  catalogue facts.
 
-## Product lookup — implemented, via an OpenAI-compatible model call (no retrieval)
+## Catalogue data (implemented, demo content)
 
-Two backend endpoints in `server/index.js`:
+`server/data/catalogue.json`, shaped like the sandbox schema:
+- **Things:** `products` (with `productLine`, `category`, `aliases`),
+  `organizations` (`type` brand / parent_company / contract_manufacturer /
+  supplier, `parent`), `sites` (factories, owned by an org), `sources` (each with
+  a `tier`: regulatory, third_party_audit, investigative, first_hand_report,
+  self_reported), `contributors` (handle, platform, about, disclosure).
+- **A product's supply chain:** `nodes` (product, tier 1–4, role, site, optional
+  production `line`, coverage, sources, contributor, validFrom/validTo) and
+  `materials`. Nodes are per product; sites are shared, which is how two
+  products share a factory's facts. (Supplier→customer links between nodes from
+  the sketch aren't implemented; nothing displays them yet.)
+- **Claims:** `facts` (subject = product/site/org id, statement, dimension,
+  coverage, `scope`, sources, contributor, validAsOf) and `gaps` (what's
+  missing, where we looked, when; optional tier). Scope: `product`,
+  `whole_site`, `whole_org`, `line:<name>`, `products:<id>,<id>`.
+- **`assessments`:** per-product score and coverage for each dimension, set by
+  people, not computed. Rule kept from BACKLOG: claimed/unknown → null score.
+  No prose lives here any more: summaries and the conclusion are generated
+  (see "Product descriptions").
+- **Fact collection** (`collectForProduct`, sandbox §9): the product's own facts,
+  then for each current node its site's and the site owner's facts, then the
+  brand's and its parents'. Drops facts whose scope excludes the product (a
+  `line:` the node isn't on, a `products:` list without it) and site facts dated
+  before the node's validFrom. A fact reached through a node is capped at the
+  node's coverage — e.g. the joggers' factory link is only "claimed" (Hartwell
+  says so), so the factory's scored SA8000 audit shows as claimed there.
+- **All current content is fictional demo data** (`"demo": true`; the pages
+  show a "Demo data" notice). example.com URLs are placeholders; the UFLPA and
+  UK registry links are real lists, but the facts citing them are demo facts.
+  Real entries need real research, each fact with a real source.
 
-- `POST /api/resolve-product` `{ query }` → `{ candidates: [{ name, url,
-  source, image }], message? }`. Checks the response cache first (a seeded
-  product resolves with no external call and has `image: null`; **links skip
-  the cache**, because short aliases like "af1" would otherwise match random
-  characters inside a product ID in a URL), else `tavilySearch.js`. For a text
-  query: Tavily search (query prefixed with "buy"; a small `exclude_domains`
-  list drops Wikipedia/Yahoo/Reddit/etc.; `include_images` +
-  `include_image_descriptions` return retailer product photos in the same
-  request), then **one plain model call** (`invokeModel` →
-  `AI_NAMING_MODEL`, defaulting to `AI_MODEL`, without the ClearCart system
-  prompt) that turns the results into up to 3
-  shopper-style names ("Coca-Cola Soda", not the page title "Shop Coca-Cola
-  Products: Find Drinks Near You | Coca-Cola US"), each linked to the result
-  that supports it, plus the listed photo (matched by description; each photo
-  is used for at most one candidate, https only). The first version was
-  Tavily-only with title cleanup and produced marketing-page titles; that
-  heuristic (`toCandidates`) now only runs as a **fallback** if the model call
-  fails, and logs a warning when it does. A text lookup costs one Tavily search
-  plus one small model call (~5–8s end to end).
-  For a **pasted link** (`normalizeUrlInput`: `http(s)://…` or `www.…`, no
-  spaces), Tavily **Extract** reads the page (Tavily fetches it, so this server
-  never requests a user-supplied URL) and the model names the single product on
-  it and picks its photo from the page's images (~2s). A page that isn't one
-  product (home page, category, article) returns `message: "That link doesn't
-  look like a single product page…"`. If Extract can't read the page (e.g. a
-  scraper-blocking retailer), it falls back to a normal search using the link
-  text.
-- `POST /api/chat` `{ mode, messages }` → `{ reply, assessment }`.
-  `mode: 'assessment'` (default) returns the scoring JSON and is served from
-  the cache when the name matches; `mode: 'chat'` returns a plain-text answer,
-  never touches the cache, and is unavailable in `DEMO_MODE`. When
-  `assessment` is present, `AssessmentCard` renders it (five dimensions ×
-  {score, coverage, explanation, sources}, plus a conclusion).
+## Lookup ladder (implemented)
 
-See "Response cache & demo mode" below for the layer in front of both.
+`GET /api/lookup?q=` (`webLookup.js` + `lookupLadder.js`, sandbox §10):
+1. Exact catalogue match → `{ kind: 'product', productId }` (frontend redirects).
+2. Otherwise `observeProduct`: brand / maker from the query words; then, if
+   `TAVILY_API_KEY` is set, not `DEMO_MODE`, and within limits, **one** Tavily
+   search (`"buy <query>"`), read by regex: brand (aliases in titles/domains),
+   "NN% fibre" composition, "Made in X" (country names from
+   `Intl.DisplayNames`, plus a few aliases like "Viet Nam"), named makers, and a
+   category from keywords (apparel/footwear/electronics). Cached per normalized
+   query for 7 days (`runtime/web-lookups.json`).
+3. `buildRelated` sections, each labelled with what it's about: reported maker's
+   factory (if a listing names one we know), the brand, each owner up the chain
+   (all capped at **inferred**), the brand's other factories (**context only**,
+   never counted), and country risk (category goods × origin against
+   `risk-reference.json`, plus a cotton-origin gap). Dimension tiles show
+   coverage only — **nothing on the page is scored**. Plus researched sibling
+   products and the request count.
+- **Limits / cost ceiling:** Tavily searches are limited to 15/hour per IP (cache
+  hits don't count) and `TAVILY_DAILY_LIMIT` (default 200) per day in total;
+  over either, the lookup uses the search words only and says so. Research
+  requests (`POST /api/requests`) are limited to 30/hour per IP, and the button
+  remembers per browser (localStorage `clearcart_requested`). Limits are in
+  memory and reset on restart. Behind a tunnel/proxy, set `TRUST_PROXY` so
+  `req.ip` is the visitor's.
+- **`risk-reference.json` is empty on purpose.** The DOL List of Goods site
+  refuses scripted downloads (403), and rows must not be typed from memory. Until
+  someone downloads the list in a browser and fills the rows, the country section
+  says "We haven't loaded the government risk lists yet".
+- Verified with a stubbed Tavily (no credits spent) and in headless Chromium at
+  1280px and 390px; not yet tried against live Tavily results.
 
-**How the model is called:**
-- `modelClient.js: chatCompletion` POSTs `{ model, messages }` to `AI_ENDPOINT`
-  and reads `choices[0].message.content`, stripping any inline
-  `<think>…</think>` block (local reasoning models emit one, and its braces
-  would confuse JSON parsing). Headers: `Authorization: Bearer AI_API_KEY` only
-  if set (the proxy supplies its own token, so normally unset), and
-  `Origin: AI_PROXY_ORIGIN` — **the proxy 403s any request with no Origin**
-  unless its `ALLOWED_ORIGINS` is `*`, and a server-side fetch sends none.
-  Timeouts: 120s for assessments/follow-ups (local models cold-start slowly),
-  20s for naming. `AI_NAMING_REASONING_EFFORT`, if set, is passed as
-  `reasoning_effort` on the naming call only (gpt-5-mini wants `minimal` for
-  speed; models that don't know the parameter may reject it, so it's opt-in).
-- `invokeAssistant(messages, { mode })` sends a **system prompt from code**
-  (`SYSTEM_PROMPT`) plus the conversation. This replaced the Foundry agent's
-  stored instructions, so there is no "republish the agent" step any more. In
-  `assessment` mode it appends the JSON-shape instructions to the last user
-  message, retries once with a stricter format correction if the reply doesn't
-  parse, and drops any source without a valid `http(s)` URL. In `chat` mode it
-  appends a plain-text instruction and returns the raw text.
-- **No retrieval, no tools, no database.** One LLM call against the model's
-  training-data knowledge, not live web search (Tavily is used only to resolve
-  the product *name*). The model is instructed to self-report
-  `coverage: unknown`/`claimed` rather than fabricate a `scored` result, but
-  nothing verifies that. This matches BACKLOG.md's A3 item ("Evidence
-  orchestration: Tavily search → typed findings → deterministic gating"),
-  which is *not yet built*. Adding real evidence-gathering would mean a
-  fetch-and-check step (or function-calling loop) in this server. Small local
-  models behind the proxy will also be weaker at the strict JSON and at
-  product knowledge than a hosted model — the retry helps with the former only.
-- **No rate limiting, no cost ceiling** — not in this server and not in the
-  pages-ai-proxy either (its origin allow-list is a browser-only control; any
-  non-browser client can send a fake Origin). `/api/chat` and
-  `/api/resolve-product` are unauthenticated, so a cache miss triggers a real
-  model call (paid, if the proxy routes to a cloud API) or Tavily credit.
-- Tavily needs `TAVILY_API_KEY` (in `.env`). Without it a non-cached lookup
-  returns a 500. Naming needs `AI_ENDPOINT` + `AI_MODEL`; without them it
-  falls back to title cleanup.
-- **Not yet deployed:** the GitHub Pages workflow, the self-hosted server, and
-  a CoLab-hosted proxy have not been set up. Verified only locally, against the
-  real pages-ai-proxy `local-server.mjs` with a mock upstream.
+## Product descriptions (implemented)
 
-**Orphaned, unused code from an earlier, reverted approach:** the Brave
-Search side of it (`braveSearch.js`, the `/api/products/search` endpoint,
-`BRAVE_API_KEY`) has been pruned. `server/lib/productLookup.js` (the JSON-LD
-scraper that consumed Brave's results) is still present with no caller at all.
+The one-line dimension summaries and the conclusion are written **from the
+facts**, never typed in, so they can't drift from the evidence
+(`descriptions.js`):
+- **Inputs** per description: the product name, the dimension's score and
+  coverage, its collected facts (id, statement, effective coverage, what it's
+  about, source types) and gaps; the conclusion takes all five. Hashed as
+  canonical JSON (sorted keys) with SHA-256, together with `PROMPT_VERSION`.
+  Because the inputs are the *collected* facts, a change to a shared factory or
+  brand fact invalidates every product that reaches it (tested: editing one
+  factory audit made exactly 4 of 12 descriptions stale).
+- **Cache:** `server/data/descriptions.json`, entries `{ product, key
+  (dimension or "conclusion"), inputsHash, promptVersion, model, text, cites,
+  generatedAt, reviewed }`. Old entries are kept as history. The server re-reads
+  the file when it changes; no restart needed.
+- **Serving:** if an entry's hash matches the current inputs, show it (origin
+  `generated`, or `reviewed` once a person sets `"reviewed": true`); otherwise
+  show **template text** built from the facts (strongest two facts + "Not
+  public: …"; the conclusion lists which dimensions have independent evidence
+  and the top gaps). **No visitor request calls a model.**
+- **Building:** `npm run descriptions:build` rewrites every description with no
+  matching entry, or whose entry came from a different model. `--dry-run` lists
+  them; `--force` rewrites all. The team runs it after editing facts. Two
+  providers:
+  - **Claude** (`AI_DESCRIPTION_PROVIDER=anthropic`): `claudeClient.js`, the
+    official `@anthropic-ai/sdk` (1.9), model `CLAUDE_MODEL` (default
+    `claude-opus-5-5`), effort `high`, structured output
+    (`output_config.format` json_schema; the schema is converted to Claude's
+    subset: `additionalProperties: false` on every object, no min/maxItems),
+    server-side refusal fallback (`fallbacks: "default"`, beta
+    `server-side-fallback-2026-07-01`). Credentials: `ANTHROPIC_API_KEY` or an
+    `ant auth login` profile (the SDK sends the key as `Authorization: Bearer`).
+  - **OpenAI-compatible** (default): `modelClient.js` `invokeText` against
+    `AI_ENDPOINT` (pages-ai-proxy, Ollama, …), model `AI_DESCRIPTION_MODEL` or
+    `AI_MODEL`; `AI_JSON_MODE=true` sends the same schema as `json_schema`
+    structured output (needed for small local models).
+  - Tried locally with Ollama `qwen2.5:7b` (RTX 4060, 8 GB): with structured
+    output the shape was always right, but 4 of 12 failed the gap check and
+    several that passed overstated the facts (e.g. "fabric is certified
+    organic" from a factory-line certification). Not good enough unreviewed.
+- **Checks on model output** (`descriptionModel.js`, `checkDescription`): JSON
+  `{sentences:[{text, cites}]}`; every sentence cites at least one fact/gap id
+  from its input and no other ids; never "ethical", "sustainable",
+  "eco-friendly", "guaranteed", "ensures", "safe to buy", "best"; "verified /
+  proven / confirmed / definitely / certainly" only when every cited fact is
+  scored; any "not public / unknown / no information" wording must cite a gap
+  (no invented gaps), and if the input has gaps at least one is cited; at most
+  2 sentences (3 for a conclusion) and 60 words (70). `PROMPT_VERSION` is
+  `descriptions-v2`. These catch format and wording problems, not a sentence
+  that quietly stretches a fact. A failed reply is retried
+  once with the problems listed; if it fails again, nothing is cached and the
+  page keeps the template.
+- The page says summaries are written from each row's evidence; the conclusion
+  is labelled "Built from" / "Written automatically from" / "… checked by the
+  ClearCart team" by origin.
+- The Claude path is verified only against a mock Anthropic API (request
+  shape, fallbacks, refusal handling); it hasn't been run with a real key yet.
+  `descriptions.json` currently holds the qwen2.5:7b output from the local run.
+- **Known template weakness:** a fact capped by a weak supply-chain link (e.g.
+  the joggers' factory audit, "claimed" because only Hartwell says they're made
+  there) is stated plainly in the template sentence; only the badge carries the
+  caveat.
 
-## Response cache & demo mode (implemented)
+## Model code
 
-`responseCache.js` (`server/lib/`) holds a small hardcoded array (`CACHED_ASSESSMENTS`) of hand-written
-product assessments, matched by substring against each entry's `aliases`
-list. **This cache is checked first, unconditionally, before ever
-considering Tavily or the model** — both `/api/resolve-product` and
-`/api/chat` (assessment mode) consult it, and a hit needs no model or Tavily
-credentials and never touches the network. `simulateThinkingDelay()`
-(900–2100ms, exported from `responseCache.js`) is awaited before returning a
-cache hit or a demo-mode refusal, so it doesn't read as obviously
-instant/fake next to a real round trip.
-
-- `DEMO_MODE=true` (env var) only changes what happens on a **miss**: refuse
-  gracefully ("Demo mode only has data for a few products: ...") instead of
-  falling through to Tavily or `invokeAssistant`; chat-mode follow-ups get
-  a "demo mode only shows saved assessments" reply. Without it, a miss
-  behaves as normal — attempts the real Tavily/model call, 500s if
-  credentials aren't configured.
-- Currently seeded with 3 products (iPhone 15 Pro, Nike Air Force 1,
-  Patagonia Better Sweater Fleece). **The dimension scores/explanations are
-  AI-generated illustrative placeholder content, not real researched-and-
-  cited data** — every `sources` array is deliberately left empty rather
-  than inventing citations. This does not meet BACKLOG.md's D2 bar ("every
-  claim needs a source URL and a tier"); treat it as UI/plumbing test
-  fixtures, not credible research, unless real research is used to replace
-  the entries.
-- Distinct from BACKLOG.md's A5 ("Cache + freshness, 7-day TTL"), which
-  describes caching *real* model responses to cut cost on repeat queries —
-  that's still unbuilt. This cache never stores anything a model actually
-  said; it's a fixed, hand-authored lookup table.
-- To run locally with **zero external setup**: `npm run dev`, then enter one
-  of the 3 seeded products — lookup, confirm and assessment all work with no
-  `.env` at all. Follow-up questions do not (they need a live model, or get
-  the demo-mode notice). Anything else falls through to the real Tavily/model
-  path unless `DEMO_MODE=true` is also set.
+`modelClient.js`: `invokeText` is used by the description build. `invokeAssistant`
+(the old chat assessment) and `invokeModel` + the model-based product naming in
+`tavilySearch.js` have no caller since the chat flow was removed; they're kept
+for other offline research (e.g. extracting facts from creator submissions, with
+a "quote must appear in the source" check), never per visitor.
 
 ## Known gaps / next steps
 
-- Product lookup has no real evidence/retrieval behind it — see "Product
-  lookup" above. This is the single biggest gap relative to what
-  `AssessmentCard`'s UI implies (sourced, verified claims).
-- No rate limiting or cost ceiling on `/api/chat` — a real risk once a
-  paid upstream is live behind the proxy (see "Product lookup").
-- The response cache's 3 entries are placeholder content, not real research
-  (see "Response cache & demo mode" above).
-- `productLookup.js` is orphaned/dead code from a reverted approach — either
-  remove it or decide whether to revive it (Brave Search itself has already
-  been pruned).
+- **The catalogue is demo data.** Two fictional products. Real entries need real
+  research with real sources; there's no editor or ingestion path yet (facts are
+  hand-edited JSON).
+- `risk-reference.json` is empty (see "Lookup ladder"), so the country rung
+  never shows a risk.
+- No contributor submissions yet: contributors exist only as data. The mockup's
+  "Contributors" nav item and "Share a report" links weren't built.
+- No research workflow behind the request queue: counts are stored, nothing
+  reads them yet.
+- JSON files, not a database: fine for a demo, rewritten on every request
+  count/cache write, single-process only.
+- Rate limits are in memory (reset on restart, per process).
 - Deployment after the Azure removal isn't set up: enable Pages (Source:
   GitHub Actions), set the `CLEARCART_API_URL` repo variable, host the Express
-  server with `CORS_ORIGINS`, and get a pages-ai-proxy running. The old Azure
-  Static Web App / Foundry resources still exist in Azure until someone
-  deletes them.
-- Model choice is open (`AI_MODEL`); a local B3IQ model hasn't been tried
-  against the assessment prompt.
-- Name resolution depends on the model behaving: it can still propose a
-  variant the user didn't mean (that's what "No, show another" is for), and
-  it adds roughly 3s to each lookup.
-- Product photos are hotlinked from retailer CDNs: they can break or move
-  (the card hides a failed image), may show a different pack size than the
-  name, and the 3 seeded demo products have none (a cache hit makes no
-  network call). The photo is only on the confirm card; it isn't saved with
-  the cart or shown on the assessment card.
-- No tests, no CI. (The Home.jsx flow was verified with a throwaway jsdom
-  harness during development, not a checked-in test suite; the view-transition
-  animation and layout have not been checked in a real browser.)
+  server with `CORS_ORIGINS`. The old Azure Static Web App / Foundry resources
+  still exist in Azure until someone deletes them.
+- Generated descriptions are shown without review (`reviewed` is recorded but
+  not required). Decide whether pages should show only reviewed entries; the
+  local 7B model's output wasn't accurate enough to show unreviewed.
+- Dead code: `productLookup.js`, `invokeAssistant`/`invokeModel` in
+  `modelClient.js`, and the naming half of `tavilySearch.js` (see "Model code").
+- No tests, no CI. (The flow was checked with throwaway scripts and headless
+  Chromium screenshots, not a checked-in suite.)
 - `About`, `Capstone Paper`, and `Technical Overview` pages are placeholder
-  text only — no real content yet.
-- No "start a new chat" affordance beyond navigating back to `/` (e.g. the
-  logo link) — works, but isn't an explicit button. This matters more now that
-  a session is scoped to one product: after the assessment, the input is a
-  follow-up box, so researching another product means starting a new chat.
+  text only.

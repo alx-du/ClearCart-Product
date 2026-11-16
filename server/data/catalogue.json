@@ -1,0 +1,162 @@
+{
+  "_about": "ClearCart catalogue. Layout follows sandbox/product-entry-example.txt: things (products, organizations, sites, sources, contributors), each product's supply-chain nodes, and facts/gaps attached to whatever they are about. Everything with \"demo\": true is fictional sample data (Hartwell, Corvane Group and their suppliers do not exist); example.com URLs are placeholders. Real government and registry URLs point at the real lists, but the facts citing them here are demo facts.",
+  "organizations": [
+    {
+      "id": "org_hartwell",
+      "name": "Hartwell",
+      "type": "brand",
+      "parent": "org_corvane",
+      "country": "United Kingdom",
+      "aliases": ["hartwell", "hartwell clothing", "hartwell.example.com"],
+      "demo": true
+    },
+    {
+      "id": "org_corvane",
+      "name": "Corvane Group",
+      "type": "parent_company",
+      "parent": null,
+      "country": "United Kingdom",
+      "aliases": ["corvane", "corvane group"],
+      "demo": true
+    },
+    {
+      "id": "org_riverside",
+      "name": "Riverside Garment Co.",
+      "type": "contract_manufacturer",
+      "parent": null,
+      "country": "Vietnam",
+      "aliases": ["riverside garment", "riverside garment co"],
+      "demo": true
+    },
+    {
+      "id": "org_northgate",
+      "name": "Northgate Textiles",
+      "type": "supplier",
+      "parent": null,
+      "country": "Vietnam",
+      "aliases": ["northgate textiles"],
+      "demo": true
+    },
+    {
+      "id": "org_eastbank",
+      "name": "Eastbank Knitting",
+      "type": "supplier",
+      "parent": null,
+      "country": "Vietnam",
+      "aliases": ["eastbank knitting"],
+      "demo": true
+    },
+    {
+      "id": "org_delta",
+      "name": "Delta Spinning",
+      "type": "supplier",
+      "parent": null,
+      "country": "Vietnam",
+      "aliases": ["delta spinning"],
+      "demo": true
+    }
+  ],
+  "sites": [
+    { "id": "site_riverside", "org": "org_riverside", "name": "Riverside Garment Factory", "country": "Vietnam", "aliases": ["riverside garment factory"], "demo": true },
+    { "id": "site_northgate", "org": "org_northgate", "name": "Northgate Fabric Mill", "country": "Vietnam", "aliases": ["northgate fabric mill"], "demo": true },
+    { "id": "site_eastbank", "org": "org_eastbank", "name": "Eastbank Knitting Mill", "country": "Vietnam", "aliases": ["eastbank knitting mill"], "demo": true },
+    { "id": "site_delta", "org": "org_delta", "name": "Delta Spinning Mill", "country": "Vietnam", "aliases": ["delta spinning mill"], "demo": true }
+  ],
+  "products": [
+    {
+      "id": "prd_hartwell_hoodie",
+      "name": "Hartwell Fleece Hoodie",
+      "brand": "org_hartwell",
+      "productLine": "Hartwell Fleece",
+      "category": "apparel",
+      "aliases": ["hartwell fleece hoodie", "hartwell hoodie"],
+      "demo": true
+    },
+    {
+      "id": "prd_hartwell_joggers",
+      "name": "Hartwell Trail Joggers",
+      "brand": "org_hartwell",
+      "productLine": "Hartwell Fleece",
+      "category": "apparel",
+      "aliases": ["hartwell trail joggers", "hartwell joggers"],
+      "demo": true
+    }
+  ],
+  "materials": [
+    { "id": "mat_hoodie_cotton", "product": "prd_hartwell_hoodie", "component": "body", "material": "cotton", "percent": 80, "recycledPercent": 0, "coverage": "claimed", "sources": ["src_hartwell_hoodie_page"] },
+    { "id": "mat_hoodie_poly", "product": "prd_hartwell_hoodie", "component": "body", "material": "polyester", "percent": 20, "recycledPercent": 50, "coverage": "claimed", "sources": ["src_hartwell_hoodie_page"] },
+    { "id": "mat_joggers_cotton", "product": "prd_hartwell_joggers", "component": "body", "material": "cotton", "percent": 100, "recycledPercent": 0, "coverage": "claimed", "sources": ["src_hartwell_joggers_page"] }
+  ],
+  "nodes": [
+    { "id": "node_hoodie_sew", "product": "prd_hartwell_hoodie", "tier": 1, "role": "Sewing and finishing", "site": "site_riverside", "line": "knitwear", "coverage": "scored", "sources": ["src_hartwell_suppliers", "src_import_research"], "contributor": "ctr_researcher", "validFrom": "2023-01-01", "validTo": null },
+    { "id": "node_hoodie_fabric_a", "product": "prd_hartwell_hoodie", "tier": 2, "role": "Fabric knitting and dyeing", "site": "site_northgate", "coverage": "claimed", "sources": ["src_hartwell_suppliers"], "contributor": null, "validFrom": "2023-01-01", "validTo": null },
+    { "id": "node_hoodie_fabric_b", "product": "prd_hartwell_hoodie", "tier": 2, "role": "Fabric knitting", "site": "site_eastbank", "coverage": "claimed", "sources": ["src_hartwell_suppliers"], "contributor": null, "validFrom": "2023-01-01", "validTo": null },
+    { "id": "node_hoodie_yarn", "product": "prd_hartwell_hoodie", "tier": 3, "role": "Yarn spinning", "site": "site_delta", "coverage": "inferred", "sources": ["src_import_research"], "contributor": "ctr_researcher", "validFrom": "2024-01-01", "validTo": null },
+    { "id": "node_joggers_sew", "product": "prd_hartwell_joggers", "tier": 1, "role": "Sewing and finishing", "site": "site_riverside", "line": "wovens", "coverage": "claimed", "sources": ["src_hartwell_suppliers"], "contributor": null, "validFrom": "2023-01-01", "validTo": null },
+    { "id": "node_joggers_fabric", "product": "prd_hartwell_joggers", "tier": 2, "role": "Fabric knitting and dyeing", "site": "site_northgate", "coverage": "claimed", "sources": ["src_hartwell_suppliers"], "contributor": null, "validFrom": "2023-01-01", "validTo": null }
+  ],
+  "facts": [
+    { "id": "f_riverside_sa8000", "subject": "site_riverside", "attribute": "social_audit", "statement": "Riverside Garment Factory passed an SA8000 labour audit in 2025.", "dimension": "people", "coverage": "scored", "scope": "whole_site", "sources": ["src_sa8000_record"], "contributor": null, "validAsOf": "2025-06-30" },
+    { "id": "f_riverside_grievance", "subject": "site_riverside", "attribute": "grievance_mechanism", "statement": "The factory has a worker complaints line run by an outside group.", "dimension": "people", "coverage": "claimed", "scope": "whole_site", "sources": ["src_hartwell_report"], "contributor": null, "validAsOf": "2025-12-31" },
+    { "id": "f_riverside_gots", "subject": "site_riverside", "attribute": "certification", "statement": "The factory's knitwear line is certified to the Global Organic Textile Standard (GOTS).", "dimension": "planet", "coverage": "scored", "scope": "line:knitwear", "sources": ["src_gots_record"], "contributor": null, "validAsOf": "2025-03-01" },
+    { "id": "f_riverside_uflpa", "subject": "org_riverside", "attribute": "enforcement_listing", "statement": "Riverside Garment Co. is not on the US forced-labour import ban list (UFLPA Entity List).", "dimension": "people", "coverage": "scored", "scope": "whole_org", "sources": ["src_uflpa"], "contributor": null, "validAsOf": "2026-09-01" },
+    { "id": "f_northgate_chemicals", "subject": "site_northgate", "attribute": "chemical_standard", "statement": "Northgate Fabric Mill says it follows the ZDHC chemical-safety guidelines for dyeing.", "dimension": "planet", "coverage": "claimed", "scope": "whole_site", "sources": ["src_hartwell_report"], "contributor": null, "validAsOf": "2025-12-31" },
+    { "id": "f_hartwell_supplier_list", "subject": "org_hartwell", "attribute": "supplier_list_published", "statement": "Hartwell publishes a list of its sewing factories and fabric mills.", "dimension": "transparency", "coverage": "scored", "scope": "whole_org", "sources": ["src_hartwell_suppliers"], "contributor": null, "validAsOf": "2026-01-15" },
+    { "id": "f_hartwell_benchmark", "subject": "org_hartwell", "attribute": "benchmark_score", "statement": "Hartwell scored 41% in an independent supply-chain transparency benchmark.", "dimension": "transparency", "coverage": "scored", "scope": "whole_org", "sources": ["src_benchmark"], "contributor": null, "validAsOf": "2025-11-01" },
+    { "id": "f_hartwell_recall", "subject": "org_hartwell", "attribute": "incident", "statement": "One colour of the Fleece Hoodie was recalled in 2024 over a zip pull that could come loose.", "dimension": "quality", "coverage": "scored", "scope": "products:prd_hartwell_hoodie", "sources": ["src_recall_notice"], "contributor": null, "validAsOf": "2024-05-20" },
+    { "id": "f_corvane_msa", "subject": "org_corvane", "attribute": "modern_slavery_statement", "statement": "Corvane Group files a yearly modern-slavery statement in the UK.", "dimension": "transparency", "coverage": "scored", "scope": "whole_org", "sources": ["src_uk_registry"], "contributor": null, "validAsOf": "2026-03-31" },
+    { "id": "f_hoodie_repair", "subject": "prd_hartwell_hoodie", "attribute": "repairability", "statement": "Spare zips are available on request, and the hoodie has a 5-year warranty.", "dimension": "quality", "coverage": "inferred", "scope": "product", "sources": ["src_creator_review"], "contributor": "ctr_creator", "validAsOf": "2026-07-01" },
+    { "id": "f_hoodie_price", "subject": "prd_hartwell_hoodie", "attribute": "price", "statement": "$68 at the Hartwell online store, checked 12 September 2026.", "dimension": "value", "coverage": "scored", "scope": "product", "sources": ["src_hartwell_hoodie_page"], "contributor": null, "validAsOf": "2026-09-12" },
+    { "id": "f_joggers_price", "subject": "prd_hartwell_joggers", "attribute": "price", "statement": "$58 at the Hartwell online store, checked 12 September 2026.", "dimension": "value", "coverage": "scored", "scope": "product", "sources": ["src_hartwell_joggers_page"], "contributor": null, "validAsOf": "2026-09-12" }
+  ],
+  "gaps": [
+    { "id": "g_riverside_wages", "subject": "site_riverside", "missing": "What workers at the sewing factory are paid", "dimension": "people", "tier": null, "searchedAt": "2026-09-12", "whereLooked": "the audit summary, Hartwell's sustainability report and NGO reports" },
+    { "id": "g_hoodie_cotton", "subject": "prd_hartwell_hoodie", "missing": "Where the cotton was grown", "dimension": "people", "tier": 4, "searchedAt": "2026-09-12", "whereLooked": "Hartwell's supplier list and sustainability report" },
+    { "id": "g_hoodie_carbon", "subject": "prd_hartwell_hoodie", "missing": "A carbon footprint for this product", "dimension": "planet", "tier": null, "searchedAt": "2026-09-12", "whereLooked": "the product page and Hartwell's sustainability report" },
+    { "id": "g_joggers_yarn", "subject": "prd_hartwell_joggers", "missing": "Who spins the yarn", "dimension": "people", "tier": 3, "searchedAt": "2026-09-12", "whereLooked": "Hartwell's supplier list" },
+    { "id": "g_joggers_cotton", "subject": "prd_hartwell_joggers", "missing": "Where the cotton was grown", "dimension": "people", "tier": 4, "searchedAt": "2026-09-12", "whereLooked": "Hartwell's supplier list and sustainability report" },
+    { "id": "g_joggers_durability", "subject": "prd_hartwell_joggers", "missing": "Any durability testing or long-term reviews", "dimension": "quality", "tier": null, "searchedAt": "2026-09-12", "whereLooked": "retailer reviews and contributor reports" }
+  ],
+  "assessments": [
+    {
+      "product": "prd_hartwell_hoodie",
+      "reviewedAt": "2026-09-12",
+      "dimensions": {
+        "planet": { "score": 2, "coverage": "inferred" },
+        "people": { "score": 3, "coverage": "scored" },
+        "quality": { "score": 4, "coverage": "inferred" },
+        "value": { "score": 3, "coverage": "scored" },
+        "transparency": { "score": 4, "coverage": "scored" }
+      }
+    },
+    {
+      "product": "prd_hartwell_joggers",
+      "reviewedAt": "2026-09-12",
+      "dimensions": {
+        "planet": { "score": null, "coverage": "claimed" },
+        "people": { "score": null, "coverage": "claimed" },
+        "quality": { "score": null, "coverage": "unknown" },
+        "value": { "score": 3, "coverage": "scored" },
+        "transparency": { "score": 4, "coverage": "scored" }
+      }
+    }
+  ],
+  "sources": [
+    { "id": "src_hartwell_suppliers", "tier": "self_reported", "publisher": "Hartwell", "title": "Hartwell supplier list 2026", "url": "https://example.com/hartwell/suppliers", "publishedAt": "2026-01-15" },
+    { "id": "src_hartwell_report", "tier": "self_reported", "publisher": "Hartwell", "title": "Hartwell sustainability report 2025", "url": "https://example.com/hartwell/report-2025", "publishedAt": "2025-12-31" },
+    { "id": "src_hartwell_hoodie_page", "tier": "self_reported", "publisher": "Hartwell", "title": "Fleece Hoodie product page", "url": "https://example.com/hartwell/fleece-hoodie", "publishedAt": "2026-09-12" },
+    { "id": "src_hartwell_joggers_page", "tier": "self_reported", "publisher": "Hartwell", "title": "Trail Joggers product page", "url": "https://example.com/hartwell/trail-joggers", "publishedAt": "2026-09-12" },
+    { "id": "src_sa8000_record", "tier": "third_party_audit", "publisher": "Certification body", "title": "SA8000 certificate record", "url": "https://example.com/sa8000/riverside", "publishedAt": "2025-06-30" },
+    { "id": "src_gots_record", "tier": "third_party_audit", "publisher": "Certification body", "title": "GOTS certified-supplier record", "url": "https://example.com/gots/riverside", "publishedAt": "2025-03-01" },
+    { "id": "src_benchmark", "tier": "third_party_audit", "publisher": "Benchmark publisher", "title": "Supply-chain transparency benchmark 2025", "url": "https://example.com/benchmark-2025", "publishedAt": "2025-11-01" },
+    { "id": "src_recall_notice", "tier": "regulatory", "publisher": "Product-safety regulator", "title": "Recall notice", "url": "https://example.com/recalls/hartwell-hoodie", "publishedAt": "2024-05-20" },
+    { "id": "src_uflpa", "tier": "regulatory", "publisher": "US Department of Homeland Security", "title": "UFLPA Entity List", "url": "https://www.dhs.gov/uflpa-entity-list", "publishedAt": "2026-09-01" },
+    { "id": "src_uk_registry", "tier": "regulatory", "publisher": "UK Home Office", "title": "Modern Slavery Statement Registry", "url": "https://modern-slavery-statement-registry.service.gov.uk/", "publishedAt": "2026-03-31" },
+    { "id": "src_creator_review", "tier": "first_hand_report", "publisher": "@demo.creator", "title": "One year with the Hartwell Fleece Hoodie", "url": "https://example.com/creator/hartwell-hoodie-review", "publishedAt": "2026-07-01" },
+    { "id": "src_import_research", "tier": "investigative", "publisher": "@demo.researcher", "title": "Tracing Hartwell's knitwear through import records", "url": "https://example.com/researcher/hartwell-imports", "publishedAt": "2026-05-10" }
+  ],
+  "contributors": [
+    { "id": "ctr_creator", "handle": "@demo.creator", "platform": "Instagram", "about": "Wore the hoodie for a year; checked the care label and spare-parts policy.", "disclosure": "No paid partnership with Hartwell" },
+    { "id": "ctr_researcher", "handle": "@demo.researcher", "platform": "Independent researcher", "about": "Traced Hartwell's knitwear and yarn through public import records.", "disclosure": "No affiliate links" }
+  ]
+}

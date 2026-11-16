@@ -197,6 +197,25 @@ async function tavilyPost(endpoint, apiKey, body, timeoutMs) {
   return response.json()
 }
 
+// Plain search results ({ title, url, content }) for the catalogue lookup,
+// which reads them with text patterns rather than a model.
+export async function searchListings(query, apiKey) {
+  const data = await tavilyPost(
+    TAVILY_SEARCH_ENDPOINT,
+    apiKey,
+    {
+      query: `buy ${query}`,
+      max_results: 8,
+      search_depth: 'basic',
+      exclude_domains: EXCLUDED_DOMAINS,
+    },
+    10000,
+  )
+  return (data.results ?? []).filter(
+    (result) => typeof result?.title === 'string' && typeof result?.url === 'string',
+  )
+}
+
 // Returns { title, content, images }, or null if Tavily couldn't read the page.
 export async function extractPage(pageUrl, apiKey) {
   const data = await tavilyPost(
